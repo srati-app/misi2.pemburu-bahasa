@@ -1074,6 +1074,101 @@
             font-weight: 600;
             text-align: center;
         }
+
+        .btn-print-admin {
+            background: linear-gradient(135deg, #0284c7, #0369a1);
+            color: #ffffff;
+            border: none;
+            border-bottom: 2.5px solid #075985;
+            border-radius: 6px;
+            padding: 3px 8px;
+            font-size: 0.7rem;
+            font-weight: 800;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            transition: filter 0.15s, transform 0.1s;
+        }
+
+        .btn-print-admin:hover {
+            filter: brightness(1.08);
+            transform: translateY(-1px);
+        }
+
+        /* Susun Atur Khas Cetakan Laporan Admin */
+        #print-report-container {
+            display: none;
+        }
+
+        @media print {
+            body {
+                background: #ffffff !important;
+                overflow: visible !important;
+                height: auto !important;
+                display: block !important;
+            }
+            #game-container {
+                display: none !important;
+            }
+            #print-report-container {
+                display: block !important;
+                width: 100%;
+                padding: 16px 20px;
+                color: #0f172a;
+                background: #ffffff;
+            }
+            .print-header {
+                text-align: center;
+                border-bottom: 2.5px solid #0f172a;
+                padding-bottom: 10px;
+                margin-bottom: 14px;
+            }
+            .print-header h2 {
+                font-size: 16pt;
+                margin-bottom: 4px;
+                color: #0f172a;
+            }
+            .print-header p {
+                font-size: 10pt;
+                color: #334155;
+            }
+            .print-meta-bar {
+                display: flex;
+                justify-content: space-between;
+                font-size: 9.5pt;
+                font-weight: 600;
+                margin-bottom: 10px;
+                color: #1e293b;
+            }
+            .print-table {
+                width: 100%;
+                border-collapse: collapse;
+                font-size: 9.5pt;
+            }
+            .print-table th, .print-table td {
+                border: 1px solid #475569;
+                padding: 6px 8px;
+                text-align: left;
+            }
+            .print-table th {
+                background-color: #e2e8f0 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+                font-weight: 800;
+                text-align: center;
+            }
+            .print-table td.col-center {
+                text-align: center;
+            }
+            .print-footer {
+                margin-top: 22px;
+                display: flex;
+                justify-content: space-between;
+                font-size: 9pt;
+                color: #475569;
+            }
+        }
     </style>
 </head>
 <body>
@@ -1094,6 +1189,7 @@
             <div class="hud-badge" id="hud-treasure">🧰 Peti: 0/5</div>
             <div class="hud-badge" id="hud-score">💎 0</div>
             <div class="hud-badge" id="hud-timer">⏱️ 00:00</div>
+            <button type="button" class="hud-btn" id="btn-audio" onclick="togolAudioPermainan()" title="Hidup/Matikan Bunyi & Muzik">🔊</button>
             <button type="button" class="hud-btn" id="btn-kamera" onclick="tukarModKamera()" title="Tukar Mod Kamera">📷</button>
             <button type="button" class="hud-btn" id="btn-pause" onclick="togolPausePermainan()" title="Jeda Permainan (Pause)">⏸️</button>
             <button type="button" class="hud-btn hud-btn-quit" id="btn-quit" onclick="sahkanQuitPermainan()" title="Keluar ke Menu Utama (Quit)">🚪</button>
@@ -1343,8 +1439,8 @@
         <div id="leaderboard-screen" class="overlay hidden">
             <div class="card leaderboard-card">
                 <div class="lb-header">
-                    <h1>🏆 10 Pemenang Terpantas</h1>
-                    <button type="button" class="btn-admin-lock" id="btn-admin-lock" onclick="togolPanelKataLaluanAdmin()" title="Mod Admin Padam Rekod">
+                    <h1 id="lb-main-title">🏆 10 Pemenang Terpantas</h1>
+                    <button type="button" class="btn-admin-lock" id="btn-admin-lock" onclick="togolPanelKataLaluanAdmin()" title="Mod Admin Padam & Cetak Rekod">
                         <span id="admin-lock-icon">🔒</span>
                     </button>
                 </div>
@@ -1364,11 +1460,14 @@
 
                 <!-- Sepanduk Aktif Mod Admin -->
                 <div id="admin-active-banner" class="admin-banner hidden">
-                    <span>🔓 Mod Admin Aktif: Klik 🗑️ untuk padam rekod.</span>
-                    <button type="button" onclick="kunciSemulaAdmin()" style="background:#dc2626; color:#fff; border:none; border-radius:6px; padding:2px 7px; font-size:0.68rem; font-weight:800; cursor:pointer;">Kunci</button>
+                    <span id="admin-banner-count">🔓 Mod Admin: Semua Rekod</span>
+                    <div style="display:flex; gap:5px; align-items:center;">
+                        <button type="button" class="btn-print-admin" onclick="cetakLaporanKedudukanAdmin()" title="Cetak Keseluruhan Rekod Pemain">🖨️ Cetak</button>
+                        <button type="button" onclick="kunciSemulaAdmin()" style="background:#dc2626; color:#fff; border:none; border-radius:6px; padding:3px 7px; font-size:0.68rem; font-weight:800; cursor:pointer;">Kunci</button>
+                    </div>
                 </div>
 
-                <!-- Senarai 10 Pemain Terbaik -->
+                <!-- Senarai Pemain -->
                 <div id="leaderboard-list" class="lb-list-container">
                     <div class="lb-empty-state">⏳ Memuatkan senarai pemenang...</div>
                 </div>
@@ -1383,398 +1482,472 @@
         </audio>
     </div>
 
+    <!-- Bekas Laporan Khas Untuk Cetakan Rasmi Admin -->
+    <div id="print-report-container"></div>
+
     <script>
         // =========================================================================
-        // 1. PEMBOLEHUBAH UTAMA, SKALA 3D & BANK 25 SOALAN + SKEMA JAWAPAN
+        // 1. KONFIGURASI GLOBAL, PEMBOLEH UBAH TERAS & ENJIN THREE.JS
         // =========================================================================
-        const MAP_WIDTH = 2240;
-        const MAP_HEIGHT = 1710;
-        const SCALE_3D = 0.08;
-
-        // Konfigurasi Google Apps Script Web App API & Kata Laluan Admin
-        // Tampal URL Web App Google Script anda di pemboleh ubah GOOGLE_SCRIPT_API_URL di bawah:
-        const GOOGLE_SCRIPT_API_URL = "https://script.google.com/macros/s/AKfycbxcNOxgOmIZA--46jur9NIwoV-NNsXWDTafx8W8rG_7ViseOrf6pPPOSWUlmh5DRQn5kA/exec";
+        const GOOGLE_SCRIPT_API_URL = ""; // Tampal URL Web App Google Apps Script anda di sini jika menggunakan storan awan
         const ADMIN_PASSWORD_SAH = "srati2001";
-        const LOCAL_LEADERBOARD_KEY = "srati_misi2_top10_pemenang_v1";
+        const LOCAL_LEADERBOARD_KEY = "misi2_pemburu_harta_karun_records_v1";
 
-        let isAdminUnlocked = false;
-        let senaraiTop10Semasa = [];
+        const MAP_WIDTH = 2440;
+        const MAP_HEIGHT = 1900;
+        const SCALE_3D = 0.06;
+        const TEMPOH_SUASANA = 65;
 
-        const to3DX = (x) => (x - MAP_WIDTH / 2) * SCALE_3D;
-        const to3DZ = (y) => (y - MAP_HEIGHT / 2) * SCALE_3D;
-        const to2DX = (x3d) => x3d / SCALE_3D + MAP_WIDTH / 2;
-        const to2DY = (z3d) => z3d / SCALE_3D + MAP_HEIGHT / 2;
-
-        // Objek Teras Three.js
-        let scene = null;
-        let camera3D = null;
-        let renderer = null;
-        let worldGroup = null;
-        let sunLight = null;
-        let hemiLight = null;
-        let groundPlaneMesh = null;
-
-        const raycaster = new THREE.Raycaster();
-        const mouseVec = new THREE.Vector2();
-
-        // Variabel Pengoptimuman (Material & Geometri Dikongsi)
-        let debuGeo = null;
-        let debuMat = null;
-        let konfetiGeo = null;
-        const konfetiMats = [];
-
-        // Objek Dinamik 3D
-        let playerGroup3D = null;
-        let playerLimbs = {};
-        let zombieMeshes = [];
-        let senaraiZombie = [];
-        let senaraiNyawaTerapung = [];
-        let treasureChest3D = null;
-        let treasureLight3D = null;
-        let targetRing3D = null;
-
-        let streetLampBulbs = [];
-        let streetPointLights = [];
-        let buildingWindowsMat = null;
-        let buildingRoofOccluders = [];
-        let fireflyPoints = null;
-        let fireflyData = [];
-        let petalPoints = null;
-        let petalData = [];
-        let koiMeshes = [];
-        let windmillBlades = [];
-        let flagMeshes = [];
-        let fountainDrops = [];
-        let dustPool = [];
-        let dustIndex = 0;
-        let confettiList3D = [];
-
-        // Status Permainan
-        let gameStarted = false;
-        let isPaused = false;
-        let isQuizActive = false;
-        let isMessageActive = false;
+        // Pemboleh Ubah Status Permainan & Pemain
         let namaPemain = "Pengembara";
         let kelasPemain = "3 Imtiyaz";
         let jantinaPemain = "lelaki";
         let nyawa = 3;
         let indexHarta = 0;
-        let quizTimerInterval = null;
-        let masaKuiz = 20;
-        let screenShake = 0;
-
-        // Penambahan Sistem Markah, Pemasa & Animasi Peti
         let jumlahDiamond = 0;
         let masaBermain = 0;
         let lastTimerSec = -1;
-        let isAnimasiPeti = false;
-        let permataList3D = [];
+        let masaKuiz = 20;
+        let quizTimerInterval = null;
 
-        // Kitaran Automatik Siang & Senja (Setiap 30 Saat)
-        const TEMPOH_SUASANA = 30;
+        let gameStarted = false;
+        let isPaused = false;
+        let isQuizActive = false;
+        let isMessageActive = false;
+        let isAnimasiPeti = false;
+        let isMoving = false;
+        let isRunning = false;
+        let lastFrameTime = performance.now();
+        let screenShake = 0;
+        let toastTimeout = null;
+
+        // Pemboleh Ubah Papan Kedudukan & Admin
+        let isAdminUnlocked = false;
+        let senaraiTop10Semasa = [];
+
+        // Pemboleh Ubah Suasana Siang / Senja
         let modSuasana = 'siang';
         let pemasaSuasana = TEMPOH_SUASANA;
         let faktorSenja = 0;
-        let toastTimeout = null;
-        let lastFrameTime = performance.now();
 
-        // Status Pergerakan & Kamera
-        let isMoving = false;
-        let isRunning = false;
-        let cameraMode = 'chase'; // Mod FPV / Belakang Watak sebagai lalai (default)
-        let cameraYaw = 0;
-        let cameraPitch = 0; // Sudut kecondongan menegak untuk mod FPV/Chase
-        let cameraZoom = 1.0;
-        let titikMulaPemain = { x: 1268, y: 855 };
-
-        // Data Virtual Joystick
-        let joystickData = { active: false, vecX: 0, vecY: 0, touchId: null };
-
-        // Objek Pemain
-        let player = {
-            x: 1268,
-            y: 855,
-            radius: 15,
-            walkSpeed: 1.8,
-            runSpeed: 2.9,
+        // Pemboleh Ubah Objek Pemain & Kawalan
+        const player = {
+            x: 1220,
+            y: 950,
+            radius: 14,
+            walkSpeed: 2.35,
+            runSpeed: 3.65,
+            angle: 0,
             targetX: null,
             targetY: null,
             targetRun: false,
-            angle: 0,
+            invulnerable: 0,
             stepAnim: 0,
-            lastStepPhase: 0,
-            invulnerable: 0
+            lastStepPhase: 0
         };
 
-        // Struktur Grid Sekolah
+        const joystickData = {
+            active: false,
+            vecX: 0,
+            vecY: 0,
+            touchId: null
+        };
+
+        let titikMulaPemain = { x: 1220, y: 950 };
+        let schoolGrid = null;
         let senaraiDinding = [];
         let tamanLestariList = [];
-        let schoolGrid = null;
+        let senaraiZombie = [];
+        let senaraiNyawaTerapung = [];
 
-        // Fungsi Semakan Pelanggaran (Collision Detection) antara bulatan pemain/entiti dan kotak dinding
-        function semakPelanggaran(x, y, radius) {
-            if (x - radius < 0 || x + radius > MAP_WIDTH || y - radius < 0 || y + radius > MAP_HEIGHT) {
+        // Pemboleh Ubah Three.js & Kamera
+        let scene = null;
+        let camera3D = null;
+        let renderer = null;
+        let worldGroup = null;
+        let groundPlaneMesh = null;
+        let hemiLight = null;
+        let sunLight = null;
+        let buildingWindowsMat = null;
+        let playerGroup3D = null;
+        let playerLimbs = {};
+        let treasureChest3D = null;
+        let treasureLight3D = null;
+        let targetRing3D = null;
+
+        let cameraMode = 'chase';
+        let cameraYaw = 0;
+        let cameraPitch = 0;
+        let cameraZoom = 1.0;
+
+        const raycaster = new THREE.Raycaster();
+        const mouseVec = new THREE.Vector2();
+
+        // Koleksi Meshes & Kesan Visual
+        let streetLampBulbs = [];
+        let streetPointLights = [];
+        let buildingRoofOccluders = [];
+        let koiMeshes = [];
+        let windmillBlades = [];
+        let flagMeshes = [];
+        let fountainDrops = [];
+        let zombieMeshes = [];
+        let permataList3D = [];
+        let confettiList3D = [];
+        let konfetiGeo = null;
+        let konfetiMats = [];
+        let dustPool = [];
+        let dustIndex = 0;
+        let debuGeo = null;
+        let debuMat = null;
+        let petalPoints = null;
+        let petalData = [];
+        let fireflyPoints = null;
+        let fireflyData = [];
+
+        // Mini-Map 2D
+        const minimapCanvas = document.getElementById('minimapCanvas');
+        const mmCtx = minimapCanvas.getContext('2d');
+
+        // Fungsi Penukaran Koordinat 2D <-> 3D
+        function to3DX(x2d) {
+            return (x2d - MAP_WIDTH / 2) * SCALE_3D;
+        }
+        function to3DZ(y2d) {
+            return (y2d - MAP_HEIGHT / 2) * SCALE_3D;
+        }
+        function to2DX(x3d) {
+            return (x3d / SCALE_3D) + MAP_WIDTH / 2;
+        }
+        function to2DY(z3d) {
+            return (z3d / SCALE_3D) + MAP_HEIGHT / 2;
+        }
+
+        function formatMasaSaat(jumlahSaat) {
+            const totalSec = Math.max(0, Math.floor(Number(jumlahSaat) || 0));
+            const min = Math.floor(totalSec / 60);
+            const sec = totalSec % 60;
+            return `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
+        }
+
+        function susunDanHadkanRekod(senarai, had) {
+            const tersusun = [...senarai]
+                .sort((a, b) => {
+                    const masaA = Number(a.masaSaat) || 999999;
+                    const masaB = Number(b.masaSaat) || 999999;
+                    if (masaA !== masaB) return masaA - masaB; // Masa paling cepat di atas
+                    return (Number(b.diamond) || 0) - (Number(a.diamond) || 0);
+                });
+            if (had && had > 0) {
+                return tersusun.slice(0, had);
+            }
+            return tersusun;
+        }
+
+        function bacaRekodTempatan(semua = false) {
+            try {
+                const raw = localStorage.getItem(LOCAL_LEADERBOARD_KEY);
+                const parsed = raw ? JSON.parse(raw) : [];
+                return Array.isArray(parsed) ? susunDanHadkanRekod(parsed, semua ? 0 : 10) : [];
+            } catch (e) {
+                return [];
+            }
+        }
+
+        function simpanRekodTempatan(senarai) {
+            try {
+                const tersusun = susunDanHadkanRekod(senarai, 0);
+                localStorage.setItem(LOCAL_LEADERBOARD_KEY, JSON.stringify(tersusun));
+                return tersusun;
+            } catch (e) {
+                return senarai;
+            }
+        }
+
+        async function hantarRekodPemenangKeAPI(rekodBaru) {
+            // Simpan terus pada sandaran tempatan tanpa had supaya admin dapat lihat semua peserta
+            const senaraiTempatan = bacaRekodTempatan(true);
+            senaraiTempatan.push(rekodBaru);
+            senaraiTop10Semasa = simpanRekodTempatan(senaraiTempatan);
+
+            if (!GOOGLE_SCRIPT_API_URL) return;
+
+            try {
+                const resp = await fetch(GOOGLE_SCRIPT_API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({
+                        action: 'add',
+                        returnAll: isAdminUnlocked,
+                        record: rekodBaru
+                    })
+                });
+                const data = await resp.json();
+                if (data && data.status === 'success' && Array.isArray(data.records)) {
+                    senaraiTop10Semasa = simpanRekodTempatan(data.records);
+                }
+            } catch (err) {
+                console.warn("Ralat menghantar rekod ke Google Script API:", err);
+            }
+        }
+
+        async function muatSenaraiTop10DariAPI() {
+            const listEl = document.getElementById('leaderboard-list');
+            const statusEl = document.getElementById('lb-status-text');
+            if (listEl) {
+                listEl.innerHTML = '<div class="lb-empty-state">⏳ Memuatkan rekod pemenang...</div>';
+            }
+
+            if (!GOOGLE_SCRIPT_API_URL) {
+                senaraiTop10Semasa = bacaRekodTempatan(isAdminUnlocked);
+                if (statusEl) {
+                    statusEl.textContent = isAdminUnlocked
+                        ? `Paparan keseluruhan ${senaraiTop10Semasa.length} peserta yang telah menamatkan misi.`
+                        : "Susunan kedudukan berdasarkan catatan masa terpantas menamatkan kesemua 5 peti harta karun (Top 10).";
+                }
+                paparSenaraiTop10UI();
+                return;
+            }
+
+            try {
+                const queryAdmin = isAdminUnlocked ? `&all=1&password=${encodeURIComponent(ADMIN_PASSWORD_SAH)}` : '';
+                const url = `${GOOGLE_SCRIPT_API_URL}?action=list${queryAdmin}&_t=${Date.now()}`;
+                const resp = await fetch(url);
+                const data = await resp.json();
+                if (data && data.status === 'success' && Array.isArray(data.records)) {
+                    senaraiTop10Semasa = simpanRekodTempatan(data.records);
+                    if (statusEl) {
+                        statusEl.textContent = isAdminUnlocked
+                            ? `☁️ Mod Admin: Memaparkan semua ${senaraiTop10Semasa.length} rekod peserta.`
+                            : "☁️ Disegerakkan dengan Google Script API • 10 Pemenang Terpantas.";
+                    }
+                } else {
+                    senaraiTop10Semasa = bacaRekodTempatan(isAdminUnlocked);
+                }
+            } catch (err) {
+                console.warn("Ralat memuatkan senarai dari Google Script API:", err);
+                senaraiTop10Semasa = bacaRekodTempatan(isAdminUnlocked);
+                if (statusEl) {
+                    statusEl.textContent = isAdminUnlocked
+                        ? `📱 Mod Admin: Memaparkan semua ${senaraiTop10Semasa.length} rekod tempatan.`
+                        : "📱 Paparan rekod tempatan • 10 Pemenang Terpantas.";
+                }
+            }
+
+            paparSenaraiTop10UI();
+        }
+
+        function paparSenaraiTop10UI() {
+            const listEl = document.getElementById('leaderboard-list');
+            const titleEl = document.getElementById('lb-main-title');
+            const bannerCountEl = document.getElementById('admin-banner-count');
+            if (!listEl) return;
+
+            const senaraiPaparan = susunDanHadkanRekod(senaraiTop10Semasa, isAdminUnlocked ? 0 : 10);
+
+            if (titleEl) {
+                titleEl.textContent = isAdminUnlocked
+                    ? `📋 Semua Kedudukan (${senaraiPaparan.length})`
+                    : '🏆 10 Pemenang Terpantas';
+            }
+            if (bannerCountEl && isAdminUnlocked) {
+                bannerCountEl.textContent = `🔓 Mod Admin (${senaraiPaparan.length} Rekod)`;
+            }
+
+            if (senaraiPaparan.length === 0) {
+                listEl.innerHTML = `
+                    <div class="lb-empty-state">
+                        🏜️ Belum ada pemain yang berjaya menamatkan kesemua 5 peti harta karun.<br>
+                        <span style="font-size:0.74rem; color:#94a3b8;">Jadilah juara pertama mencatat rekod terpantas!</span>
+                    </div>
+                `;
+                return;
+            }
+
+            listEl.innerHTML = '';
+            senaraiPaparan.forEach((item, idx) => {
+                const kedudukan = idx + 1;
+                const row = document.createElement('div');
+                row.className = `lb-row ${kedudukan <= 3 ? 'rank-' + kedudukan : ''}`;
+
+                let ikonRank = `#${kedudukan}`;
+                if (kedudukan === 1) ikonRank = '🥇';
+                else if (kedudukan === 2) ikonRank = '🥈';
+                else if (kedudukan === 3) ikonRank = '🥉';
+
+                const masaPaparan = item.masaFormat || formatMasaSaat(item.masaSaat);
+                const tarikhPaparan = item.tarikh ? ` • ${item.tarikh}` : '';
+                const ikonWatak = item.jantina === 'perempuan' ? '👧' : '👦';
+
+                const infoHTML = `
+                    <div class="lb-rank-badge">${ikonRank}</div>
+                    <div class="lb-player-info">
+                        <div class="lb-player-name">${ikonWatak} ${escapeHTML(item.nama || 'Pengembara')}</div>
+                        <div class="lb-player-meta">🏫 ${escapeHTML(item.kelas || '-')} • 💎 ${Number(item.diamond) || 0}${escapeHTML(tarikhPaparan)}</div>
+                    </div>
+                    <div class="lb-time-badge">⏱️ ${escapeHTML(masaPaparan)}</div>
+                `;
+                row.innerHTML = infoHTML;
+
+                if (isAdminUnlocked) {
+                    const delBtn = document.createElement('button');
+                    delBtn.type = 'button';
+                    delBtn.className = 'btn-delete-row';
+                    delBtn.title = `Padam rekod ${item.nama}`;
+                    delBtn.textContent = '🗑️';
+                    delBtn.onclick = () => padamRekodPemenang(item.id, item.nama);
+                    row.appendChild(delBtn);
+                }
+
+                listEl.appendChild(row);
+            });
+        }
+
+        function cetakLaporanKedudukanAdmin() {
+            if (!isAdminUnlocked) return;
+            mainBunyi('klik');
+
+            const semuaRekod = susunDanHadkanRekod(senaraiTop10Semasa, 0);
+            const printContainer = document.getElementById('print-report-container');
+            if (!printContainer) return;
+
+            const tarikhCetak = new Date().toLocaleString('ms-MY', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+
+            let barisJadual = '';
+            if (semuaRekod.length === 0) {
+                barisJadual = `<tr><td colspan="7" class="col-center">Tiada rekod peserta ditemui.</td></tr>`;
+            } else {
+                semuaRekod.forEach((item, idx) => {
+                    const rank = idx + 1;
+                    const watakTeks = item.jantina === 'perempuan' ? 'Murid Perempuan' : 'Murid Lelaki';
+                    const masaTeks = item.masaFormat || formatMasaSaat(item.masaSaat);
+                    const tarikhTeks = item.tarikh || '-';
+                    barisJadual += `
+                        <tr>
+                            <td class="col-center"><strong>${rank}</strong></td>
+                            <td>${escapeHTML(item.nama || 'Pengembara')}</td>
+                            <td class="col-center">${escapeHTML(item.kelas || '-')}</td>
+                            <td class="col-center">${watakTeks}</td>
+                            <td class="col-center"><strong>${escapeHTML(masaTeks)}</strong></td>
+                            <td class="col-center">${Number(item.diamond) || 0}</td>
+                            <td class="col-center">${escapeHTML(tarikhTeks)}</td>
+                        </tr>
+                    `;
+                });
+            }
+
+            printContainer.innerHTML = `
+                <div class="print-header">
+                    <h2>LAPORAN KESELURUHAN KEDUDUKAN PESERTA</h2>
+                    <p>Misi 2: Pemburu Harta Karun Bahasa (Bahasa Melayu Tahun 3)</p>
+                </div>
+                <div class="print-meta-bar">
+                    <span>Jumlah Keseluruhan Peserta: ${semuaRekod.length} Orang</span>
+                    <span>Tarikh & Masa Cetakan: ${escapeHTML(tarikhCetak)}</span>
+                </div>
+                <table class="print-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 8%;">Ked.</th>
+                            <th style="width: 28%;">Nama Penuh Murid</th>
+                            <th style="width: 14%;">Kelas</th>
+                            <th style="width: 16%;">Watak</th>
+                            <th style="width: 12%;">Masa</th>
+                            <th style="width: 10%;">Permata</th>
+                            <th style="width: 12%;">Tarikh</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${barisJadual}
+                    </tbody>
+                </table>
+                <div class="print-footer">
+                    <span>Dicetak melalui Mod Pentadbir (Admin)</span>
+                    <span>Disahkan oleh: ___________________________</span>
+                </div>
+            `;
+
+            window.print();
+        }
+
+        // Fungsi Semakan Pelanggaran Dinding & Pagar
+        function semakPelanggaran(px, py, radius) {
+            if (px - radius < 36 || px + radius > MAP_WIDTH - 36 || py - radius < 36 || py + radius > MAP_HEIGHT - 36) {
                 return true;
             }
             for (let i = 0; i < senaraiDinding.length; i++) {
                 const d = senaraiDinding[i];
-                const closestX = Math.max(d.x, Math.min(x, d.x + d.w));
-                const closestY = Math.max(d.y, Math.min(y, d.y + d.h));
-                const dx = x - closestX;
-                const dy = y - closestY;
-                if (dx * dx + dy * dy < radius * radius) {
+                const closestX = Math.max(d.x, Math.min(px, d.x + d.w));
+                const closestY = Math.max(d.y, Math.min(py, d.y + d.h));
+                const distX = px - closestX;
+                const distY = py - closestY;
+                if ((distX * distX + distY * distY) < (radius * radius)) {
                     return true;
                 }
             }
             return false;
         }
 
-        // Mini-Map 2D
-        const minimapCanvas = document.getElementById('minimapCanvas');
-        const mmCtx = minimapCanvas.getContext('2d');
-
         // =========================================================================
-        // BANK 25 SOALAN BAHASA MELAYU TAHUN 3 (KSSR SEMAKAN 2017) & SKEMA JAWAPAN
-        // =========================================================================
-        const BANK_SOALAN_BM = [
-            { id: 1, soalan: "1. Kakak menyusun buku-buku cerita di atas ________ di sudut bilik bacaan.", pilihan: ["almari", "Proton Saga", "Perpustakaan Negara", "Cikgu Aminah"] },
-            { id: 2, soalan: "2. Pada cuti sekolah yang lalu, keluarga Haris telah melancong ke ________.", pilihan: ["pulau", "pantai", "Pulau Langkawi", "kedai cenderamata"] },
-            { id: 3, soalan: "3. “________ hendak ke perpustakaan bersama-sama?” tanya Amirul kepada rakan-rakannya.", pilihan: ["Saya", "Kamu", "Baginda", "Beliau"] },
-            { id: 4, soalan: "4. Ibu membeli se________ pisang emas di gerai buah-buahan itu.", pilihan: ["sikat", "biji", "batang", "keping"] },
-            { id: 5, soalan: "5. Nelayan itu menggunakan se________ jala untuk menangkap ikan di sungai.", pilihan: ["helai", "lembar", "labuh", "keping"] },
-            { id: 6, soalan: "6. Aiman sedang ________ rumput di halaman rumah pada petang ini.", pilihan: ["memotong", "berjalan", "tidur", "duduk"] },
-            { id: 7, soalan: "7. Adik kecil itu ________ apabila melihat anjing menyalak di tepi pagar.", pilihan: ["menangis", "menjahit", "membungkus", "menyapu"] },
-            { id: 8, soalan: "8. Surat jemputan Hari Sukan itu ________ oleh setiausaha persatuan.", pilihan: ["menulis", "ditulis", "menuliskan", "penulis"] },
-            { id: 9, soalan: "9. Pakaian yang dijemur di bawah cahaya matahari yang ________ itu cepat kering.", pilihan: ["terik", "sejuk", "lembap", "malap"] },
-            { id: 10, soalan: "10. Nadia mengulang kaji pelajaran ________ mendengar muzik perlahan.", pilihan: ["sambil", "kerana", "atau", "lalu"] },
-            { id: 11, soalan: "11. ________ tarikh sambutan Hari Kebangsaan peringkat sekolah kita?", pilihan: ["Apakah", "Bilakah", "Siapakah", "Mengapakah"] },
-            { id: 12, soalan: "12. Murid-murid Tahun Tiga Cerdik ________ sampah di kawasan taman sains.", pilihan: ["mengutip", "kutipan", "terkutip", "pengutip"] },
-            { id: 13, soalan: "13. Kita perlu menjaga ________ diri supaya sentiasa sihat dan cergas.", pilihan: ["bersih", "kebersihan", "membersihkan", "pembersih"] },
-            { id: 14, soalan: "14. Setiap pagi, datuk gemar minum kopi panas sambil membaca ________.", pilihan: ["surat khabar", "jam tangan", "papan hitam", "cermin mata"] },
-            { id: 15, soalan: "15. ________ berterbangan di taman bunga apabila angin bertiup sepoi-sepoi bahasa.", pilihan: ["Rama-rama", "Kura-kura", "Jentik-jentik", "Biri-biri"] },
-            { id: 16, soalan: "16. Pilih ayat yang betul dari segi tatabahasa.", pilihan: ["Ali dan Abu pergi ke kantin sekolah.", "Ali serta Abu pergi ke kantin sekolah.", "Ali dengan Abu pergi ke kantin sekolah.", "Ali lalu Abu pergi ke kantin sekolah."] },
-            { id: 17, soalan: "17. Pilih ayat yang betul penggunaan kata sendi namanya.", pilihan: ["Hadiah itu diberikan kepada Mei Ling.", "Hadiah itu diberikan pada Mei Ling.", "Hadiah itu diberikan dari Mei Ling.", "Hadiah itu diberikan di Mei Ling."] },
-            { id: 18, soalan: "18. Ayat manakah yang menggunakan tanda baca dan huruf besar dengan betul?", pilihan: ["“Tahniah, Syafiq!” kata Cikgu Lim.", "“tahniah, Syafiq!” kata cikgu Lim.", "“Tahniah, syafiq!” kata Cikgu lim.", "“Tahniah! Syafiq” kata cikgu lim."] },
-            { id: 19, soalan: "19. Razi digelar ________ kerana dia gemar membaca pelbagai jenis buku cerita.", pilihan: ["ulat buku", "ringan tulang", "berat mulut", "anak emas"] },
-            { id: 20, soalan: "20. Puan Salmah berasa ________ apabila anaknya berjaya mendapat tempat pertama dalam pertandingan pidato.", pilihan: ["besar hati", "iri hati", "mati akal", "rambang mata"] },
-            { id: 21, soalan: "21. Maksud baris pantun “Menjaga alam tanggungjawab kita” ialah kita hendaklah ________.", pilihan: ["memelihara dan memulihara alam sekitar", "menebang pokok di hutan sesuka hati", "membuang sisa makanan ke dalam longkang", "membiarkan sampah berselerak di padang"] },
-            { id: 22, soalan: "22. “Program Kitar Semula diadakan di Dewan Bestari pada hari Sabtu bermula pukul 8:00 pagi hingga 11:00 pagi. Murid digalakkan membawa kertas, kotak dan tin kosong.” — Apakah tujuan murid digalakkan membawa bahan tersebut?", pilihan: ["Untuk menyertai program kitar semula", "Untuk dijual di kedai runcit berhampiran", "Untuk dijadikan bahan mainan di rumah", "Untuk dibuang ke dalam tong sampah biasa"] },
-            { id: 23, soalan: "23. Berdasarkan maklumat pada Program Kitar Semula (8:00 pagi hingga 11:00 pagi), program tersebut berlangsung selama ________ jam.", pilihan: ["dua", "tiga", "empat", "lima"] },
-            { id: 24, soalan: "24. Apakah amalan yang patut dilakukan oleh murid sebelum melintas jalan raya?", pilihan: ["Menoleh ke kiri dan ke kanan serta memastikan tiada kenderaan", "Berlari laju tanpa melihat keadaan sekeliling", "Bermain bola di bahu jalan bersama rakan", "Menggunakan telefon bimbit sambil berjalan"] },
-            { id: 25, soalan: "25. “Para ________ sedang mendengar taklimat keselamatan daripada pegawai bomba dengan penuh teliti.”", pilihan: ["hadirin", "para hadirin", "hadirin-hadirin", "semua para hadirin"] }
-        ];
-
-        // Skema Jawapan Rasmi
-        const SKEMA_JAWAPAN_BM = {
-            1:  { huruf: 'A', jawapanIndex: 0, sp: '5.1.1(i)',   tajuk: 'Kata Nama Am', ulasan: "'almari' ialah Kata Nama Am yang merujuk kepada perabot/benda secara umum dan ditulis dengan huruf kecil." },
-            2:  { huruf: 'C', jawapanIndex: 2, sp: '5.1.1(ii)',  tajuk: 'Kata Nama Khas', ulasan: "'Pulau Langkawi' ialah Kata Nama Khas bagi tempat tertentu dan huruf pertamanya mesti ditulis dengan huruf besar." },
-            3:  { huruf: 'B', jawapanIndex: 1, sp: '5.1.1(iii)', tajuk: 'Kata Ganti Nama Diri', ulasan: "'Kamu' ialah Kata Ganti Nama Diri Kedua yang sesuai digunakan ketika bercakap secara langsung dengan rakan." },
-            4:  { huruf: 'A', jawapanIndex: 0, sp: '5.1.1(iv)',  tajuk: 'Penjodoh Bilangan', ulasan: "Penjodoh bilangan 'sikat' digunakan untuk gugusan buah pisang yang masih melekat pada tangkainya." },
-            5:  { huruf: 'C', jawapanIndex: 2, sp: '5.1.1(iv)',  tajuk: 'Penjodoh Bilangan', ulasan: "Penjodoh bilangan 'labuh' digunakan khusus untuk benda yang berjuntai atau dibentangkan seperti jala dan tirai." },
-            6:  { huruf: 'A', jawapanIndex: 0, sp: '5.1.2(i)',   tajuk: 'Kata Kerja Aktif Transitif', ulasan: "'memotong' ialah Kata Kerja Aktif Transitif yang memerlukan objek ('rumput') selepasnya." },
-            7:  { huruf: 'A', jawapanIndex: 0, sp: '5.1.2(i)',   tajuk: 'Kata Kerja Aktif Tak Transitif', ulasan: "'menangis' ialah Kata Kerja Aktif Tak Transitif yang dapat berdiri sendiri tanpa memerlukan objek." },
-            8:  { huruf: 'B', jawapanIndex: 1, sp: '5.1.2(ii)',  tajuk: 'Kata Kerja Pasif', ulasan: "'ditulis' ialah Kata Kerja Pasif (berimbuhan di-) yang berpadanan dengan kata sendi 'oleh'." },
-            9:  { huruf: 'A', jawapanIndex: 0, sp: '5.1.3',      tajuk: 'Kata Adjektif', ulasan: "'terik' ialah Kata Adjektif yang membawa maksud sangat panas (cahaya matahari)." },
-            10: { huruf: 'A', jawapanIndex: 0, sp: '5.1.4',      tajuk: 'Kata Hubung', ulasan: "Kata hubung 'sambil' digunakan untuk menunjukkan dua perbuatan yang dilakukan serentak." },
-            11: { huruf: 'B', jawapanIndex: 1, sp: '5.1.4',      tajuk: 'Kata Tanya', ulasan: "Kata tanya 'Bilakah' digunakan untuk menanyakan masa, waktu atau tarikh." },
-            12: { huruf: 'A', jawapanIndex: 0, sp: '5.2.1',      tajuk: 'Kata Berimbuhan Awalan', ulasan: "'mengutip' ialah kata kerja berimbuhan awalan meN- (meng-) yang menunjukkan perbuatan aktif." },
-            13: { huruf: 'B', jawapanIndex: 1, sp: '5.2.1',      tajuk: 'Kata Berimbuhan Apitan', ulasan: "'kebersihan' ialah kata nama terbitan (imbuhan apitan ke-...-an) yang bermaksud keadaan bersih." },
-            14: { huruf: 'A', jawapanIndex: 0, sp: '5.2.2',      tajuk: 'Kata Majmuk', ulasan: "'surat khabar' ialah kata majmuk yang bermaksud akhbar/bahan bacaan berita harian." },
-            15: { huruf: 'A', jawapanIndex: 0, sp: '5.2.3',      tajuk: 'Kata Ganda', ulasan: "'Rama-rama' ialah kata ganda penuh bagi serangga bersayap yang boleh terbang di taman bunga." },
-            16: { huruf: 'A', jawapanIndex: 0, sp: '5.3.1',      tajuk: 'Membina Ayat (Kata Hubung)', ulasan: "Kata hubung 'dan' tepat untuk menggabungkan dua subjek setara (Ali dan Abu) yang melakukan tindakan bersama." },
-            17: { huruf: 'A', jawapanIndex: 0, sp: '5.3.1',      tajuk: 'Membina Ayat (Kata Sendi Nama)', ulasan: "Kata sendi nama 'kepada' digunakan di hadapan kata nama yang merujuk kepada manusia atau penerima." },
-            18: { huruf: 'A', jawapanIndex: 0, sp: '5.3.1',      tajuk: 'Tanda Baca dan Huruf Besar', ulasan: "Permulaan cakap ajuk ('Tahniah') serta kata nama khas ('Syafiq' dan 'Cikgu Lim') mesti bermula dengan huruf besar." },
-            19: { huruf: 'A', jawapanIndex: 0, sp: '4.1.1',      tajuk: 'Simpulan Bahasa', ulasan: "'ulat buku' bermaksud orang yang suka atau rajin membaca buku." },
-            20: { huruf: 'A', jawapanIndex: 0, sp: '4.1.1',      tajuk: 'Simpulan Bahasa', ulasan: "'besar hati' bermaksud berasa bangga atau gembira atas sesuatu kejayaan." },
-            21: { huruf: 'A', jawapanIndex: 0, sp: '4.2.1',      tajuk: 'Seni Bahasa (Maksud Pantun)', ulasan: "Baris tersebut membawa maksud setiap individu bertanggungjawab menjaga kebersihan dan kelestarian alam sekitar." },
-            22: { huruf: 'A', jawapanIndex: 0, sp: '2.2.1',      tajuk: 'Kefahaman Maklumat / Teks', ulasan: "Bahan tersebut dibawa bagi menjayakan dan menyertai Program Kitar Semula di Dewan Bestari." },
-            23: { huruf: 'B', jawapanIndex: 1, sp: '2.2.1',      tajuk: 'Kefahaman Maklumat / Teks', ulasan: "Tempoh masa dari pukul 8:00 pagi hingga 11:00 pagi ialah selama 3 jam (11 − 8 = 3)." },
-            24: { huruf: 'A', jawapanIndex: 0, sp: '1.1.2',      tajuk: 'Nilai Murni dan Keselamatan', ulasan: "Menoleh ke kiri dan ke kanan memastikan jalan selamat dan bebas kenderaan sebelum melintas." },
-            25: { huruf: 'A', jawapanIndex: 0, sp: '5.1 / 5.2',  tajuk: 'Hukum Tatabahasa (Kata Bilangan)', ulasan: "Perkataan 'hadirin' sudah membawa maksud jamak; penggunaan 'para' hanya memerlukan kata dasar 'hadirin'." }
-        };
-
-        // Koleksi Mercu Tanda & Pantun Pembayang Lokasi Peti Harta Karun (Rawak setiap pusingan)
-        const LOKASI_PEMBAYANG_HARTA = [
-            {
-                id: 'padang_utara',
-                c: 5, r: 0,
-                pantun: "Rumput hijau terbentang luas, trek merah tempat berlari; peti menanti dengan puas, di pinggir Padang Sekolah berseri-seri."
-            },
-            {
-                id: 'astaka',
-                c: 5, r: 2,
-                pantun: "Tiang kuning gagah berdiri, bendera berkibar megah di udara; di koridor Astaka tempat berperi, tersimpan peti permata berharga."
-            },
-            {
-                id: 'taman_sains',
-                c: 1, r: 3,
-                pantun: "Ikan koi berenang riang, jambatan kayu merentang kolam; di Taman Sains bayang-bayang, tersimpan peti di teduh alam."
-            },
-            {
-                id: 'makmal_pss',
-                c: 2, r: 1,
-                pantun: "Bumbung biru tempat mengkaji, buku tersusun gedung ilmu; di luar Makmal dan PSS menanti, peti bertuah menanti kamu."
-            },
-            {
-                id: 'blok_a',
-                c: 1, r: 0,
-                pantun: "Panel solar berkilau cahaya, ilmu ditimba setiap hari; di koridor Blok Akademik A, peti harta menanti diri."
-            },
-            {
-                id: 'blok_b',
-                c: 1, r: 2,
-                pantun: "Deretan kelas tempat belajar, taman bunga menghias tepi; di laluan Blok Akademik B yang segar, peti misteri sedia menanti."
-            },
-            {
-                id: 'kantin',
-                c: 3, r: 3,
-                pantun: "Bumbung jingga harum aroma, tempat berehat selepas belajar; di luar Kantin Sekolah yang ceria, peti karun sedia terlakar."
-            },
-            {
-                id: 'pra_annur',
-                c: 2, r: 2,
-                pantun: "Bumbung kuning ceria berseri, riang ria si anak kecil; di sisi Kelas Pra An-Nur bestari, tersimpan peti indah terpencil."
-            },
-            {
-                id: 'surau',
-                c: 3, r: 5,
-                pantun: "Kubah emas berkilau indah, bumbung hijau sejuk dipandang; di luar Surau SRATI yang megah, peti bertuah setia menghadang."
-            },
-            {
-                id: 'dewan',
-                c: 6, r: 4,
-                pantun: "Bumbung biru luas terbentang, tempat berhimpun warga sekolah; di pinggir Dewan Terbuka nan tenang, peti berharga menanti langkah."
-            },
-            {
-                id: 'bengkel_rbt',
-                c: 1, r: 6,
-                pantun: "Bumbung ungu tempat berkarya, cipta rekaan penuh inovasi; di luar Bengkel RBT berjaya, peti karun menunggu di sisi."
-            },
-            {
-                id: 'transit_ceria',
-                c: 5, r: 3,
-                pantun: "Merah jambu warna ceria, tempat menunggu penuh gembira; di koridor Blok Transit Ceria, peti harta menanti segera."
-            }
-        ];
-
-        // Senarai 5 Peti Harta Karun & Pantun Pembayang Lokasi (Diisi secara rawak)
-        const senaraiHarta = Array.from({ length: 5 }, (_, idx) => ({
-            x: 0,
-            y: 0,
-            lokasiId: '',
-            pantun: '',
-            soalanId: idx + 1,
-            soalan: '',
-            pilihan: [],
-            jawapan: 0
-        }));
-
-        // Rekod ID soalan & lokasi pusingan terdahulu supaya pusingan baharu sentiasa berbeza
-        let idSoalanPusinganLalu = new Set();
-        let susunanLokasiLalu = '';
-
-        function kocokSenaraiRawak(arr) {
-            const salinan = [...arr];
-            for (let i = salinan.length - 1; i > 0; i--) {
-                let r = Math.random();
-                if (window.crypto && window.crypto.getRandomValues) {
-                    const buf = new Uint32Array(1);
-                    window.crypto.getRandomValues(buf);
-                    r = buf[0] / (0xffffffff + 1);
-                }
-                const j = Math.floor(r * (i + 1));
-                [salinan[i], salinan[j]] = [salinan[j], salinan[i]];
-            }
-            return salinan;
-        }
-
-        function rawakkanSoalanHartaKarun() {
-            const jumlahPeti = senaraiHarta.length; 
-            const soalanBelumKeluar = BANK_SOALAN_BM.filter(s => !idSoalanPusinganLalu.has(s.id));
-            const soalanSudahKeluar = BANK_SOALAN_BM.filter(s => idSoalanPusinganLalu.has(s.id));
-
-            // Utamakan soalan baharu yang belum keluar pada permainan sebelum ini, kemudian lengkapkan ke jumlah peti unik
-            const kolamKeutamaan = [
-                ...kocokSenaraiRawak(soalanBelumKeluar),
-                ...kocokSenaraiRawak(soalanSudahKeluar)
-            ];
-
-            const terpilih10Unik = kocokSenaraiRawak(kolamKeutamaan.slice(0, jumlahPeti));
-            idSoalanPusinganLalu = new Set(terpilih10Unik.map(s => s.id));
-
-            for (let i = 0; i < jumlahPeti; i++) {
-                const itemSoalan = terpilih10Unik[i];
-                const skema = SKEMA_JAWAPAN_BM[itemSoalan.id];
-                senaraiHarta[i].soalanId = itemSoalan.id;
-                senaraiHarta[i].soalan = itemSoalan.soalan.replace(/^\d+\.\s*/, '');
-                senaraiHarta[i].pilihan = [...itemSoalan.pilihan];
-                senaraiHarta[i].jawapan = skema ? skema.jawapanIndex : 0;
-            }
-        }
-
-        function rawakkanLokasiHartaKarun(pusatX, pusatY, titikMula) {
-            const jumlahPeti = senaraiHarta.length;
-
-            // Tapis calon lokasi yang sah (tidak bertindih dengan titik mula pemain atau halangan)
-            const calonSah = LOKASI_PEMBAYANG_HARTA.filter((lok) => {
-                const lx = pusatX(lok.c);
-                const ly = pusatY(lok.r);
-                const jarakMula = Math.hypot(lx - titikMula.x, ly - titikMula.y);
-                return jarakMula > 140 && !semakPelanggaran(lx, ly, 16);
-            });
-
-            let terpilih = [];
-            // Cuba dapatkan susunan rawak yang berbeza daripada pusingan sebelum ini
-            for (let cubaan = 0; cubaan < 8; cubaan++) {
-                const dikocok = kocokSenaraiRawak(calonSah);
-                const dipilihSementara = [];
-
-                for (const calon of dikocok) {
-                    if (dipilihSementara.length >= jumlahPeti) break;
-                    const cx = pusatX(calon.c);
-                    const cy = pusatY(calon.r);
-                    // Pastikan setiap peti berjarak sekurang-kurangnya 260 unit antara satu sama lain
-                    const cukupJauh = dipilihSementara.every((p) => {
-                        return Math.hypot(pusatX(p.c) - cx, pusatY(p.r) - cy) >= 260;
-                    });
-                    if (cukupJauh) {
-                        dipilihSementara.push(calon);
-                    }
-                }
-
-                // Lengkapkan jika calon berjarak jauh kurang daripada jumlahPeti
-                if (dipilihSementara.length < jumlahPeti) {
-                    for (const calon of dikocok) {
-                        if (dipilihSementara.length >= jumlahPeti) break;
-                        if (!dipilihSementara.some((p) => p.id === calon.id)) {
-                            dipilihSementara.push(calon);
-                        }
-                    }
-                }
-
-                const tandatangan = dipilihSementara.map((p) => p.id).join('->');
-                terpilih = dipilihSementara;
-                if (tandatangan !== susunanLokasiLalu) {
-                    susunanLokasiLalu = tandatangan;
-                    break;
-                }
-            }
-
-            for (let i = 0; i < jumlahPeti; i++) {
-                const lok = terpilih[i] || calonSah[i % calonSah.length];
-                senaraiHarta[i].x = pusatX(lok.c);
-                senaraiHarta[i].y = pusatY(lok.r);
-                senaraiHarta[i].lokasiId = lok.id;
-                senaraiHarta[i].pantun = lok.pantun;
-            }
-        }
-
-        // =========================================================================
-        // 2. SISTEM BUNYI SINTESIS (WEB AUDIO API)
+        // 2. SISTEM BUNYI SINTESIS (WEB AUDIO API) & MUZIK LATAR
         // =========================================================================
         let audioCtx = null;
+        let audioDibenarkan = true;
+
+        function bukaKunciAudio() {
+            try {
+                if (!audioCtx) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    audioCtx = new AudioContext();
+                }
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+                // Mainkan buffer senyap 1-sampel untuk membuka kunci audio pada iOS/Android
+                const buffer = audioCtx.createBuffer(1, 1, 22050);
+                const source = audioCtx.createBufferSource();
+                source.buffer = buffer;
+                source.connect(audioCtx.destination);
+                source.start(0);
+            } catch (e) {
+                // Abaikan jika pelayar masih menyekat
+            }
+        }
+
+        // Buka kunci audio pada interaksi sentuhan atau klik pertama pemain
+        ['pointerdown', 'touchstart', 'keydown'].forEach((evt) => {
+            window.addEventListener(evt, bukaKunciAudio, { once: true, passive: true });
+        });
+
+        function togolAudioPermainan() {
+            audioDibenarkan = !audioDibenarkan;
+            const btnAudio = document.getElementById('btn-audio');
+            const bgMusic = document.getElementById('bg-music');
+
+            if (btnAudio) {
+                btnAudio.textContent = audioDibenarkan ? '🔊' : '🔇';
+            }
+
+            if (audioDibenarkan) {
+                bukaKunciAudio();
+                mainBunyi('klik');
+                if (bgMusic && gameStarted && !isPaused) {
+                    bgMusic.volume = 0.28;
+                    bgMusic.play().catch(() => {});
+                }
+            } else if (bgMusic) {
+                bgMusic.pause();
+            }
+        }
 
         function mainBunyi(jenis) {
+            if (!audioDibenarkan) return;
             try {
                 if (!audioCtx) {
                     const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -1792,64 +1965,66 @@
                 const now = audioCtx.currentTime;
 
                 if (jenis === 'klik') {
-                    osc.type = 'sine';
-                    osc.frequency.setValueAtTime(520, now);
-                    osc.frequency.exponentialRampToValueAtTime(780, now + 0.08);
-                    gain.gain.setValueAtTime(0.08, now);
-                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(580, now);
+                    osc.frequency.exponentialRampToValueAtTime(880, now + 0.11);
+                    gain.gain.setValueAtTime(0.24, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
                     osc.start(now);
-                    osc.stop(now + 0.08);
+                    osc.stop(now + 0.13);
                 } else if (jenis === 'suasana') {
                     osc.type = 'sine';
                     osc.frequency.setValueAtTime(392, now);
-                    osc.frequency.exponentialRampToValueAtTime(587.33, now + 0.25);
-                    gain.gain.setValueAtTime(0.05, now);
-                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+                    osc.frequency.exponentialRampToValueAtTime(587.33, now + 0.32);
+                    gain.gain.setValueAtTime(0.18, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
                     osc.start(now);
-                    osc.stop(now + 0.28);
+                    osc.stop(now + 0.36);
                 } else if (jenis === 'nyawa') {
-                    osc.type = 'sine';
+                    osc.type = 'triangle';
                     osc.frequency.setValueAtTime(587.33, now);
-                    osc.frequency.setValueAtTime(880, now + 0.1);
-                    gain.gain.setValueAtTime(0.12, now);
-                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.32);
+                    osc.frequency.setValueAtTime(880, now + 0.12);
+                    osc.frequency.setValueAtTime(1174.66, now + 0.24);
+                    gain.gain.setValueAtTime(0.28, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.42);
                     osc.start(now);
-                    osc.stop(now + 0.32);
+                    osc.stop(now + 0.43);
                 } else if (jenis === 'peti') {
                     osc.type = 'triangle';
                     osc.frequency.setValueAtTime(440, now);
-                    osc.frequency.setValueAtTime(554.37, now + 0.09);
-                    osc.frequency.setValueAtTime(659.25, now + 0.18);
-                    gain.gain.setValueAtTime(0.12, now);
-                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+                    osc.frequency.setValueAtTime(554.37, now + 0.1);
+                    osc.frequency.setValueAtTime(659.25, now + 0.2);
+                    osc.frequency.setValueAtTime(880, now + 0.3);
+                    gain.gain.setValueAtTime(0.3, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.48);
                     osc.start(now);
-                    osc.stop(now + 0.35);
+                    osc.stop(now + 0.5);
                 } else if (jenis === 'langkah') {
                     osc.type = 'sine';
-                    osc.frequency.setValueAtTime(140, now);
-                    osc.frequency.exponentialRampToValueAtTime(40, now + 0.05);
-                    gain.gain.setValueAtTime(0.025, now);
-                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+                    osc.frequency.setValueAtTime(165, now);
+                    osc.frequency.exponentialRampToValueAtTime(55, now + 0.08);
+                    gain.gain.setValueAtTime(0.11, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
                     osc.start(now);
-                    osc.stop(now + 0.05);
+                    osc.stop(now + 0.1);
                 } else if (jenis === 'betul') {
-                    osc.type = 'sine';
+                    osc.type = 'triangle';
                     osc.frequency.setValueAtTime(523.25, now);
                     osc.frequency.setValueAtTime(659.25, now + 0.1);
                     osc.frequency.setValueAtTime(783.99, now + 0.2);
                     osc.frequency.setValueAtTime(1046.5, now + 0.3);
-                    gain.gain.setValueAtTime(0.14, now);
-                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+                    gain.gain.setValueAtTime(0.32, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
                     osc.start(now);
-                    osc.stop(now + 0.5);
+                    osc.stop(now + 0.56);
                 } else if (jenis === 'salah' || jenis === 'zombie') {
                     osc.type = 'sawtooth';
-                    osc.frequency.setValueAtTime(180, now);
-                    osc.frequency.linearRampToValueAtTime(95, now + 0.35);
-                    gain.gain.setValueAtTime(0.14, now);
-                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+                    osc.frequency.setValueAtTime(210, now);
+                    osc.frequency.linearRampToValueAtTime(85, now + 0.42);
+                    gain.gain.setValueAtTime(0.32, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.44);
                     osc.start(now);
-                    osc.stop(now + 0.35);
+                    osc.stop(now + 0.45);
                 } else if (jenis === 'menang') {
                     const notas = [523.25, 659.25, 783.99, 1046.5, 783.99, 1046.5];
                     notas.forEach((freq, idx) => {
@@ -1859,10 +2034,10 @@
                         o.connect(g);
                         g.connect(audioCtx.destination);
                         o.frequency.setValueAtTime(freq, now + idx * 0.12);
-                        g.gain.setValueAtTime(0.12, now + idx * 0.12);
-                        g.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.12 + 0.25);
+                        g.gain.setValueAtTime(0.28, now + idx * 0.12);
+                        g.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.12 + 0.28);
                         o.start(now + idx * 0.12);
-                        o.stop(now + idx * 0.12 + 0.25);
+                        o.stop(now + idx * 0.12 + 0.3);
                     });
                 }
             } catch (e) {
@@ -4162,95 +4337,282 @@
             if (!treasureChest3D || !treasureLight3D) return;
             if (indexHarta < senaraiHarta.length) {
                 const h = senaraiHarta[indexHarta];
-                const hx = to3DX(h.x);
-                const hz = to3DZ(h.y);
-                treasureChest3D.position.set(hx, 0, hz);
+                const x3 = to3DX(h.x);
+                const z3 = to3DZ(h.y);
+                treasureChest3D.position.set(x3, 0, z3);
                 treasureChest3D.visible = true;
-                treasureLight3D.position.set(hx, 2.8, hz);
-                treasureLight3D.visible = true;
+                treasureLight3D.position.set(x3, 3.2, z3);
+                treasureLight3D.intensity = 1.4;
             } else {
                 treasureChest3D.visible = false;
-                treasureLight3D.visible = false;
-            }
-        }
-        let timerAksiWatak = null;
-
-        function mainBunyiAksiWatak(jantina) {
-            try {
-                if (!audioCtx) {
-                    const AudioContext = window.AudioContext || window.webkitAudioContext;
-                    audioCtx = new AudioContext();
-                }
-                if (audioCtx.state === 'suspended') {
-                    audioCtx.resume();
-                }
-                const now = audioCtx.currentTime;
-
-                if (jantina === 'lelaki') {
-                    // Kesan bunyi sorakan gol "Siuuuu!" bertenaga
-                    const osc = audioCtx.createOscillator();
-                    const gain = audioCtx.createGain();
-                    osc.type = 'triangle';
-                    osc.connect(gain);
-                    gain.connect(audioCtx.destination);
-                    osc.frequency.setValueAtTime(320, now);
-                    osc.frequency.exponentialRampToValueAtTime(640, now + 0.18);
-                    osc.frequency.exponentialRampToValueAtTime(480, now + 0.55);
-                    gain.gain.setValueAtTime(0.11, now);
-                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.58);
-                    osc.start(now);
-                    osc.stop(now + 0.58);
-                } else {
-                    // Kesan bunyi "Ting-ling!" comel kawaii
-                    const notas = [783.99, 1046.5, 1318.5];
-                    notas.forEach((f, i) => {
-                        const o = audioCtx.createOscillator();
-                        const g = audioCtx.createGain();
-                        o.type = 'sine';
-                        o.connect(g);
-                        g.connect(audioCtx.destination);
-                        o.frequency.setValueAtTime(f, now + i * 0.08);
-                        g.gain.setValueAtTime(0.09, now + i * 0.08);
-                        g.gain.exponentialRampToValueAtTime(0.001, now + i * 0.08 + 0.25);
-                        o.start(now + i * 0.08);
-                        o.stop(now + i * 0.08 + 0.25);
-                    });
-                }
-            } catch (e) {
-                // Abaikan sekatan audio pelayar jika ada
+                treasureLight3D.intensity = 0;
             }
         }
 
-        function resetAksiWatakMenu() {
-            const svgLelaki = document.getElementById('svg-lelaki');
-            const shoutLelaki = document.getElementById('shout-lelaki');
-            const lelakiSmile = document.getElementById('lelaki-smile');
-            const lelakiShoutMouth = document.getElementById('lelaki-shout-mouth');
+        // Bank Soalan Tatabahasa Bahasa Melayu Tahun 3 & Pembayang Pantun Lokasi Sekolah
+        const SKEMA_JAWAPAN_BM = {
+            bm1: {
+                tajuk: "Kata Nama Khas",
+                jawapanIndex: 1,
+                ulasan: "Si Comel ialah kata nama khas bagi haiwan peliharaan."
+            },
+            bm2: {
+                tajuk: "Kata Kerja Transitif",
+                jawapanIndex: 2,
+                ulasan: "Menyiram memerlukan objek iaitu pokok bunga."
+            },
+            bm3: {
+                tajuk: "Kata Adjektif",
+                jawapanIndex: 0,
+                ulasan: "Harum menerangkan bau bunga mawar di taman."
+            },
+            bm4: {
+                tajuk: "Penjodoh Bilangan",
+                jawapanIndex: 3,
+                ulasan: "Sebilah digunakan untuk benda tajam seperti pisau dan gunting."
+            },
+            bm5: {
+                tajuk: "Kata Sendi Nama",
+                jawapanIndex: 1,
+                ulasan: "Kata sendi 'di' menunjukkan tempat (perpustakaan)."
+            },
+            bm6: {
+                tajuk: "Imbuhan Awalan",
+                jawapanIndex: 0,
+                ulasan: "Membaca bermaksud melakukan perbuatan menelaah buku."
+            },
+            bm7: {
+                tajuk: "Kata Ganti Nama Diri",
+                jawapanIndex: 2,
+                ulasan: "Beliau digunakan untuk menghormati guru atau pemimpin."
+            },
+            bm8: {
+                tajuk: "Simpulan Bahasa",
+                jawapanIndex: 1,
+                ulasan: "Ringan tulang bermaksud rajin bekerja dan membantu."
+            }
+        };
 
-            const svgPerempuan = document.getElementById('svg-perempuan');
-            const shoutPerempuan = document.getElementById('shout-perempuan');
-            const eyeROpen = document.getElementById('perempuan-eye-r-open');
-            const eyeRWink = document.getElementById('perempuan-eye-r-wink');
-            const blushL = document.getElementById('perempuan-blush-l');
-            const blushR = document.getElementById('perempuan-blush-r');
-            const pSmile = document.getElementById('perempuan-smile');
+        // Setiap lokasi mempunyai pantun pembayang tempat yang merujuk terus kepada bangunan/taman sekolah
+        const LOKASI_PANTUN_SEKOLAH = [
+            {
+                lokasiNama: "PADANG SEKOLAH & ASTAKA",
+                pantun: "Berlari kencang mengejar bola, rumput menghijau luas terbentang; Pergi ke padang dan juga astaka, di tepi padang peti menanti.",
+                pilihTitik: (pusatX, pusatY) => [
+                    { x: pusatX(4), y: pusatY(2) },
+                    { x: pusatX(5), y: pusatY(2) },
+                    { x: pusatX(6), y: pusatY(2) },
+                    { x: pusatX(7), y: pusatY(1) },
+                    { x: pusatX(7), y: pusatY(2) }
+                ]
+            },
+            {
+                lokasiNama: "KANTIN SEKOLAH",
+                pantun: "Loceng berbunyi waktu rehat, membeli kuih dan air milo; Menuju ke kantin perut pun sihat, peti tersorok di tepi kantin.",
+                pilihTitik: (pusatX, pusatY) => [
+                    { x: pusatX(2), y: pusatY(3) },
+                    { x: pusatX(3), y: pusatY(3) },
+                    { x: pusatX(4), y: pusatY(3) },
+                    { x: pusatX(2), y: pusatY(4) },
+                    { x: pusatX(4), y: pusatY(4) }
+                ]
+            },
+            {
+                lokasiNama: "SURAU SRATI",
+                pantun: "Azan berkumandang merdu sekali, tempat beribadah bersih berseri; Ke Surau SRATI langkah diatur, harta tersembunyi di sisi surau.",
+                pilihTitik: (pusatX, pusatY) => [
+                    { x: pusatX(3), y: pusatY(4) },
+                    { x: pusatX(4), y: pusatY(4) },
+                    { x: pusatX(4), y: pusatY(5) },
+                    { x: pusatX(3), y: pusatY(6) },
+                    { x: pusatX(4), y: pusatY(6) }
+                ]
+            },
+            {
+                lokasiNama: "TAMAN SAINS & BLOK AKADEMIK",
+                pantun: "Indah sungguh taman sains di tepi, kolam ikan berenang riang; Blok akademik di sebelah kiri, cari peti di laluan berdekatan.",
+                pilihTitik: (pusatX, pusatY) => [
+                    { x: pusatX(1), y: pusatY(2) },
+                    { x: pusatX(2), y: pusatY(1) },
+                    { x: pusatX(1), y: pusatY(3) },
+                    { x: pusatX(2), y: pusatY(4) },
+                    { x: pusatX(1), y: pusatY(5) }
+                ]
+            },
+            {
+                lokasiNama: "DEWAN TERBUKA & BENGKEL RBT",
+                pantun: "Majlis gilang-gemilang di dewan terbuka, bengkel RBT pula di hujung lorong; Perhatikan arah sekitar dewan dan bengkel, peti harta menanti di situ.",
+                pilihTitik: (pusatX, pusatY) => [
+                    { x: pusatX(5), y: pusatY(4) },
+                    { x: pusatX(6), y: pusatY(4) },
+                    { x: pusatX(7), y: pusatY(5) },
+                    { x: pusatX(1), y: pusatY(6) },
+                    { x: pusatX(2), y: pusatY(6) }
+                ]
+            }
+        ];
 
-            if (svgLelaki) svgLelaki.classList.remove('anim-siuuu');
-            if (shoutLelaki) shoutLelaki.classList.remove('active');
-            if (lelakiSmile) lelakiSmile.style.display = '';
-            if (lelakiShoutMouth) lelakiShoutMouth.style.display = 'none';
+        const BANK_SOALAN_HARTA = [
+            {
+                soalanId: "bm1",
+                soalan: "Kucing kesayangan Amir bernama Si Comel. Perkataan 'Si Comel' ialah...",
+                pilihan: ["Kata Nama Am", "Kata Nama Khas", "Kata Kerja", "Kata Adjektif"],
+                jawapan: 1
+            },
+            {
+                soalanId: "bm2",
+                soalan: "Ibu sedang ____ pokok bunga mawar pada waktu petang.",
+                pilihan: ["menulis", "melukis", "menyiram", "memasak"],
+                jawapan: 2
+            },
+            {
+                soalanId: "bm3",
+                soalan: "Bunga mawar di taman sekolah itu sungguh ____ baunya.",
+                pilihan: ["harum", "masam", "busuk", "pahit"],
+                jawapan: 0
+            },
+            {
+                soalanId: "bm4",
+                soalan: "Tukang kebun menggunakan se____ parang untuk memotong ranting.",
+                pilihan: ["biji", "ekor", "buah", "bilah"],
+                jawapan: 3
+            },
+            {
+                soalanId: "bm5",
+                soalan: "Murid-murid membaca buku cerita ____ perpustakaan sekolah.",
+                pilihan: ["ke", "di", "dari", "daripada"],
+                jawapan: 1
+            },
+            {
+                soalanId: "bm6",
+                soalan: "Aina rajin ____ buku setiap malam sebelum tidur.",
+                pilihan: ["membaca", "terbaca", "bacaan", "dibaca"],
+                jawapan: 0
+            },
+            {
+                soalanId: "bm7",
+                soalan: "Guru Besar sedang berucap. ____ menasihati murid agar belajar bersungguh-sungguh.",
+                pilihan: ["Dia", "Kami", "Beliau", "Mereka"],
+                jawapan: 2
+            },
+            {
+                soalanId: "bm8",
+                soalan: "Kakak seorang yang ____ kerana selalu membantu ibu di dapur.",
+                pilihan: ["mulut murai", "ringan tulang", "besar kepala", "anak emas"],
+                jawapan: 1
+            }
+        ];
 
-            if (svgPerempuan) svgPerempuan.classList.remove('anim-kawaii');
-            if (shoutPerempuan) shoutPerempuan.classList.remove('active');
-            if (eyeROpen) eyeROpen.style.display = '';
-            if (eyeRWink) eyeRWink.style.display = 'none';
-            if (blushL) blushL.setAttribute('opacity', '0');
-            if (blushR) blushR.setAttribute('opacity', '0');
-            if (pSmile) pSmile.setAttribute('d', 'M44 33 Q50 37.5 56 33');
+        let senaraiHarta = [];
+
+        function rawakkanSoalanHartaKarun() {
+            const salinan = [...BANK_SOALAN_HARTA].sort(() => Math.random() - 0.5).slice(0, 5);
+            const lokasiRawak = [...LOKASI_PANTUN_SEKOLAH].sort(() => Math.random() - 0.5);
+
+            senaraiHarta = salinan.map((item, idx) => {
+                const lok = lokasiRawak[idx % lokasiRawak.length];
+                return {
+                    ...item,
+                    lokasiNama: lok.lokasiNama,
+                    pantun: lok.pantun,
+                    pilihTitik: lok.pilihTitik,
+                    x: 1220,
+                    y: 950
+                };
+            });
+        }
+
+        function rawakkanLokasiHartaKarun(pusatX, pusatY, titikMula) {
+            const calonTetap = [
+                { x: pusatX(5), y: pusatY(2) },
+                { x: pusatX(3), y: pusatY(3) },
+                { x: pusatX(4), y: pusatY(4) },
+                { x: pusatX(2), y: pusatY(2) },
+                { x: pusatX(6), y: pusatY(4) }
+            ];
+
+            const semuaNod = [];
+            if (schoolGrid) {
+                for (let r = 0; r < schoolGrid.rows; r++) {
+                    for (let c = 0; c < schoolGrid.cols; c++) {
+                        if (!schoolGrid.nodDitelan[r][c]) {
+                            semuaNod.push({ x: pusatX(c), y: pusatY(r) });
+                        }
+                    }
+                }
+            }
+
+            const lokasiTerpakai = [];
+            senaraiHarta.forEach((harta, idx) => {
+                let titikDipilih = null;
+
+                if (typeof harta.pilihTitik === 'function') {
+                    const senaraiCadangan = harta.pilihTitik(pusatX, pusatY).sort(() => Math.random() - 0.5);
+                    for (const pt of senaraiCadangan) {
+                        const jarakMula = Math.hypot(pt.x - titikMula.x, pt.y - titikMula.y);
+                        const bertindih = lokasiTerpakai.some(u => Math.hypot(u.x - pt.x, u.y - pt.y) < 150);
+                        if (jarakMula > 140 && !bertindih && !semakPelanggaran(pt.x, pt.y, 16)) {
+                            titikDipilih = pt;
+                            break;
+                        }
+                    }
+                }
+
+                if (!titikDipilih) {
+                    const fallbackPt = calonTetap[idx % calonTetap.length];
+                    if (!semakPelanggaran(fallbackPt.x, fallbackPt.y, 16)) {
+                        titikDipilih = fallbackPt;
+                    }
+                }
+
+                if (!titikDipilih) {
+                    for (const nod of semuaNod.sort(() => Math.random() - 0.5)) {
+                        const jarakMula = Math.hypot(nod.x - titikMula.x, nod.y - titikMula.y);
+                        const bertindih = lokasiTerpakai.some(u => Math.hypot(u.x - nod.x, u.y - nod.y) < 150);
+                        if (jarakMula > 140 && !bertindih && !semakPelanggaran(nod.x, nod.y, 16)) {
+                            titikDipilih = nod;
+                            break;
+                        }
+                    }
+                }
+
+                if (!titikDipilih) {
+                    titikDipilih = { x: titikMula.x + 120, y: titikMula.y };
+                }
+
+                harta.x = titikDipilih.x;
+                harta.y = titikDipilih.y;
+                lokasiTerpakai.push({ x: titikDipilih.x, y: titikDipilih.y });
+            });
+        }
+
+        function escapeHTML(str) {
+            return String(str || "")
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#39;");
+        }
+
+        function padamAmaranNama() {
+            const errEl = document.getElementById('nama-error-msg');
+            const inputEl = document.getElementById('input-nama');
+            if (errEl) errEl.classList.add('hidden');
+            if (inputEl) inputEl.classList.remove('shake-error');
+        }
+
+        function padamAmaranWatak() {
+            const errWatakEl = document.getElementById('watak-error-msg');
+            const gridWatakEl = document.getElementById('character-grid-box');
+            if (errWatakEl) errWatakEl.classList.add('hidden');
+            if (gridWatakEl) gridWatakEl.classList.remove('shake-error');
         }
 
         function pilihWatakMenu(jantina) {
-            jantinaPemain = jantina;
+            bukaKunciAudio();
+            mainBunyi('klik');
+
             const inputJantina = document.getElementById('input-jantina');
             if (inputJantina) inputJantina.value = jantina;
             padamAmaranWatak();
@@ -4260,286 +4622,113 @@
             if (cardLelaki) cardLelaki.classList.toggle('selected', jantina === 'lelaki');
             if (cardPerempuan) cardPerempuan.classList.toggle('selected', jantina === 'perempuan');
 
-            // Reset animasi terdahulu supaya boleh dicetuskan semula setiap kali diklik
-            clearTimeout(timerAksiWatak);
-            resetAksiWatakMenu();
-            mainBunyiAksiWatak(jantina);
-
             if (jantina === 'lelaki') {
-                const svgLelaki = document.getElementById('svg-lelaki');
-                const shoutLelaki = document.getElementById('shout-lelaki');
-                const lelakiSmile = document.getElementById('lelaki-smile');
-                const lelakiShoutMouth = document.getElementById('lelaki-shout-mouth');
+                const svgL = document.getElementById('svg-lelaki');
+                const bubbleL = document.getElementById('shout-lelaki');
+                const smileL = document.getElementById('lelaki-smile');
+                const mouthL = document.getElementById('lelaki-shout-mouth');
 
-                if (svgLelaki) {
-                    void svgLelaki.offsetWidth;
-                    svgLelaki.classList.add('anim-siuuu');
+                if (svgL) {
+                    svgL.classList.remove('anim-siuuu');
+                    void svgL.offsetWidth;
+                    svgL.classList.add('anim-siuuu');
                 }
-                if (shoutLelaki) {
-                    void shoutLelaki.offsetWidth;
-                    shoutLelaki.classList.add('active');
+                if (bubbleL) {
+                    bubbleL.classList.remove('active');
+                    void bubbleL.offsetWidth;
+                    bubbleL.classList.add('active');
                 }
-                if (lelakiSmile) lelakiSmile.style.display = 'none';
-                if (lelakiShoutMouth) lelakiShoutMouth.style.display = '';
+                if (smileL) smileL.style.display = 'none';
+                if (mouthL) mouthL.style.display = 'block';
 
-                timerAksiWatak = setTimeout(resetAksiWatakMenu, 1250);
+                setTimeout(() => {
+                    if (smileL) smileL.style.display = 'block';
+                    if (mouthL) mouthL.style.display = 'none';
+                    if (svgL) svgL.classList.remove('anim-siuuu');
+                }, 1150);
             } else {
-                const svgPerempuan = document.getElementById('svg-perempuan');
-                const shoutPerempuan = document.getElementById('shout-perempuan');
-                const eyeROpen = document.getElementById('perempuan-eye-r-open');
-                const eyeRWink = document.getElementById('perempuan-eye-r-wink');
+                const svgP = document.getElementById('svg-perempuan');
+                const bubbleP = document.getElementById('shout-perempuan');
+                const eyeOpen = document.getElementById('perempuan-eye-r-open');
+                const eyeWink = document.getElementById('perempuan-eye-r-wink');
                 const blushL = document.getElementById('perempuan-blush-l');
                 const blushR = document.getElementById('perempuan-blush-r');
-                const pSmile = document.getElementById('perempuan-smile');
 
-                if (svgPerempuan) {
-                    void svgPerempuan.offsetWidth;
-                    svgPerempuan.classList.add('anim-kawaii');
+                if (svgP) {
+                    svgP.classList.remove('anim-kawaii');
+                    void svgP.offsetWidth;
+                    svgP.classList.add('anim-kawaii');
                 }
-                if (shoutPerempuan) {
-                    void shoutPerempuan.offsetWidth;
-                    shoutPerempuan.classList.add('active');
+                if (bubbleP) {
+                    bubbleP.classList.remove('active');
+                    void bubbleP.offsetWidth;
+                    bubbleP.classList.add('active');
                 }
-                if (eyeROpen) eyeROpen.style.display = 'none';
-                if (eyeRWink) eyeRWink.style.display = '';
+                if (eyeOpen) eyeOpen.style.display = 'none';
+                if (eyeWink) eyeWink.style.display = 'block';
                 if (blushL) blushL.setAttribute('opacity', '0.85');
                 if (blushR) blushR.setAttribute('opacity', '0.85');
-                if (pSmile) pSmile.setAttribute('d', 'M43 32.5 Q50 39.5 57 32.5');
 
-                timerAksiWatak = setTimeout(resetAksiWatakMenu, 1350);
+                setTimeout(() => {
+                    if (eyeOpen) eyeOpen.style.display = 'block';
+                    if (eyeWink) eyeWink.style.display = 'none';
+                    if (blushL) blushL.setAttribute('opacity', '0');
+                    if (blushR) blushR.setAttribute('opacity', '0');
+                    if (svgP) svgP.classList.remove('anim-kawaii');
+                }, 1300);
             }
-        }
-
-        function padamAmaranNama() {
-            const inputNama = document.getElementById('input-nama');
-            const errEl = document.getElementById('nama-error-msg');
-            if (inputNama) inputNama.classList.remove('shake-error');
-            if (errEl) errEl.classList.add('hidden');
-        }
-
-        function padamAmaranWatak() {
-            const gridEl = document.getElementById('character-grid-box');
-            const errEl = document.getElementById('watak-error-msg');
-            if (gridEl) gridEl.classList.remove('shake-error');
-            if (errEl) errEl.classList.add('hidden');
         }
 
         function togolPanduanMenu() {
             mainBunyi('klik');
-            const body = document.getElementById('menu-guide-body');
-            const arrow = document.getElementById('guide-arrow');
-            if (!body) return;
-            const tersembunyi = body.classList.toggle('hidden');
-            if (arrow) arrow.textContent = tersembunyi ? '▼' : '▲';
-        }
-
-        // =========================================================================
-        // SISTEM API GOOGLE SCRIPT & PAPAN KEDUDUKAN TOP 10 PEMENANG TERPANTAS
-        // =========================================================================
-        function formatMasaSaat(jumlahSaat) {
-            const totalSec = Math.max(0, Math.floor(Number(jumlahSaat) || 0));
-            const min = Math.floor(totalSec / 60);
-            const sec = totalSec % 60;
-            return `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
-        }
-
-        function susunDanHadkanTop10(senarai) {
-            return [...senarai]
-                .sort((a, b) => {
-                    const masaA = Number(a.masaSaat) || 999999;
-                    const masaB = Number(b.masaSaat) || 999999;
-                    if (masaA !== masaB) return masaA - masaB; // Masa paling cepat di atas
-                    return (Number(b.diamond) || 0) - (Number(a.diamond) || 0);
-                })
-                .slice(0, 10);
-        }
-
-        function bacaRekodTempatan() {
-            try {
-                const raw = localStorage.getItem(LOCAL_LEADERBOARD_KEY);
-                const parsed = raw ? JSON.parse(raw) : [];
-                return Array.isArray(parsed) ? susunDanHadkanTop10(parsed) : [];
-            } catch (e) {
-                return [];
-            }
-        }
-
-        function simpanRekodTempatan(senarai) {
-            try {
-                const top10 = susunDanHadkanTop10(senarai);
-                localStorage.setItem(LOCAL_LEADERBOARD_KEY, JSON.stringify(top10));
-                return top10;
-            } catch (e) {
-                return senarai;
-            }
-        }
-
-        async function hantarRekodPemenangKeAPI(rekodBaru) {
-            // Simpan terus pada sandaran tempatan supaya sentiasa pantas dan tersedia
-            const senaraiTempatan = bacaRekodTempatan();
-            senaraiTempatan.push(rekodBaru);
-            senaraiTop10Semasa = simpanRekodTempatan(senaraiTempatan);
-
-            if (!GOOGLE_SCRIPT_API_URL) return;
-
-            try {
-                const resp = await fetch(GOOGLE_SCRIPT_API_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify({
-                        action: 'add',
-                        record: rekodBaru
-                    })
-                });
-                const data = await resp.json();
-                if (data && data.status === 'success' && Array.isArray(data.records)) {
-                    senaraiTop10Semasa = simpanRekodTempatan(data.records);
-                }
-            } catch (err) {
-                console.warn("Ralat menghantar rekod ke Google Script API:", err);
-            }
-        }
-
-        async function muatSenaraiTop10DariAPI() {
-            const listEl = document.getElementById('leaderboard-list');
-            const statusEl = document.getElementById('lb-status-text');
-            if (listEl) {
-                listEl.innerHTML = '<div class="lb-empty-state">⏳ Memuatkan rekod 10 pemenang terpantas...</div>';
-            }
-
-            if (!GOOGLE_SCRIPT_API_URL) {
-                senaraiTop10Semasa = bacaRekodTempatan();
-                if (statusEl) {
-                    statusEl.textContent = "Susunan kedudukan berdasarkan catatan masa terpantas menamatkan permainan (Top 10).";
-                }
-                paparSenaraiTop10UI();
-                return;
-            }
-
-            try {
-                const url = `${GOOGLE_SCRIPT_API_URL}?action=list&_t=${Date.now()}`;
-                const resp = await fetch(url);
-                const data = await resp.json();
-                if (data && data.status === 'success' && Array.isArray(data.records)) {
-                    senaraiTop10Semasa = simpanRekodTempatan(data.records);
-                    if (statusEl) {
-                        statusEl.textContent = "☁️ Disegerakkan dengan Google Script API • 10 Pemenang Terpantas.";
-                    }
-                } else {
-                    senaraiTop10Semasa = bacaRekodTempatan();
-                }
-            } catch (err) {
-                console.warn("Ralat memuatkan senarai dari Google Script API:", err);
-                senaraiTop10Semasa = bacaRekodTempatan();
-                if (statusEl) {
-                    statusEl.textContent = "📱 Paparan rekod tempatan • 10 Pemenang Terpantas.";
-                }
-            }
-
-            paparSenaraiTop10UI();
-        }
-
-        function paparSenaraiTop10UI() {
-            const listEl = document.getElementById('leaderboard-list');
-            if (!listEl) return;
-
-            const top10 = susunDanHadkanTop10(senaraiTop10Semasa);
-            if (top10.length === 0) {
-                listEl.innerHTML = `
-                    <div class="lb-empty-state">
-                        🏜️ Belum ada pemain yang berjaya menamatkan kesemua 5 peti harta karun.<br>
-                        <span style="font-size:0.74rem; color:#94a3b8;">Jadilah juara pertama mencatat rekod terpantas!</span>
-                    </div>
-                `;
-                return;
-            }
-
-            listEl.innerHTML = '';
-            top10.forEach((item, idx) => {
-                const kedudukan = idx + 1;
-                const row = document.createElement('div');
-                row.className = `lb-row ${kedudukan <= 3 ? 'rank-' + kedudukan : ''}`;
-
-                let ikonRank = `#${kedudukan}`;
-                if (kedudukan === 1) ikonRank = '🥇';
-                else if (kedudukan === 2) ikonRank = '🥈';
-                else if (kedudukan === 3) ikonRank = '🥉';
-
-                const masaPaparan = item.masaFormat || formatMasaSaat(item.masaSaat);
-                const tarikhPaparan = item.tarikh ? ` • ${item.tarikh}` : '';
-                const ikonWatak = item.jantina === 'perempuan' ? '👧' : '👦';
-
-                const infoHTML = `
-                    <div class="lb-rank-badge">${ikonRank}</div>
-                    <div class="lb-player-info">
-                        <div class="lb-player-name">${ikonWatak} ${escapeHTML(item.nama || 'Pengembara')}</div>
-                        <div class="lb-player-meta">🏫 ${escapeHTML(item.kelas || '-')} • 💎 ${Number(item.diamond) || 0}${escapeHTML(tarikhPaparan)}</div>
-                    </div>
-                    <div class="lb-time-badge">⏱️ ${escapeHTML(masaPaparan)}</div>
-                `;
-                row.innerHTML = infoHTML;
-
-                if (isAdminUnlocked) {
-                    const delBtn = document.createElement('button');
-                    delBtn.type = 'button';
-                    delBtn.className = 'btn-delete-row';
-                    delBtn.title = `Padam rekod ${item.nama}`;
-                    delBtn.textContent = '🗑️';
-                    delBtn.onclick = () => padamRekodPemenang(item.id, item.nama);
-                    row.appendChild(delBtn);
-                }
-
-                listEl.appendChild(row);
-            });
-        }
-
-        function escapeHTML(str) {
-            return String(str)
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#39;');
+            const bodyEl = document.getElementById('menu-guide-body');
+            const arrowEl = document.getElementById('guide-arrow');
+            if (!bodyEl) return;
+            const isHidden = bodyEl.classList.contains('hidden');
+            bodyEl.classList.toggle('hidden', !isHidden);
+            if (arrowEl) arrowEl.textContent = isHidden ? '▲' : '▼';
         }
 
         function bukaSemakKedudukan() {
+            bukaKunciAudio();
             mainBunyi('klik');
-            // Reset keadaan kunci admin setiap kali modal dibuka semula
-            kunciSemulaAdmin(true);
-            document.getElementById('leaderboard-screen').classList.remove('hidden');
+            const lbScreen = document.getElementById('leaderboard-screen');
+            if (lbScreen) lbScreen.classList.remove('hidden');
             muatSenaraiTop10DariAPI();
         }
 
         function tutupSkorKedudukan() {
             mainBunyi('klik');
+            const lbScreen = document.getElementById('leaderboard-screen');
+            if (lbScreen) lbScreen.classList.add('hidden');
             kunciSemulaAdmin(true);
-            document.getElementById('leaderboard-screen').classList.add('hidden');
         }
 
         function togolPanelKataLaluanAdmin() {
             mainBunyi('klik');
             if (isAdminUnlocked) {
-                kunciSemulaAdmin();
+                kunciSemulaAdmin(false);
                 return;
             }
             const passBox = document.getElementById('admin-password-box');
             const passInput = document.getElementById('input-admin-pass');
             const errEl = document.getElementById('admin-pass-error');
-            if (!passBox) return;
-
-            const tersembunyi = passBox.classList.toggle('hidden');
             if (errEl) errEl.classList.add('hidden');
-            if (!tersembunyi && passInput) {
-                passInput.value = '';
-                passInput.focus();
+            if (passBox) {
+                const akanBuka = passBox.classList.contains('hidden');
+                passBox.classList.toggle('hidden', !akanBuka);
+                if (akanBuka && passInput) {
+                    passInput.value = '';
+                    passInput.focus();
+                }
             }
         }
 
         function sahkanKataLaluanAdmin() {
             const passInput = document.getElementById('input-admin-pass');
             const errEl = document.getElementById('admin-pass-error');
-            const passBox = document.getElementById('admin-password-box');
             const bannerEl = document.getElementById('admin-active-banner');
+            const passBox = document.getElementById('admin-password-box');
             const lockBtn = document.getElementById('btn-admin-lock');
             const lockIcon = document.getElementById('admin-lock-icon');
 
@@ -4547,12 +4736,12 @@
             if (nilai === ADMIN_PASSWORD_SAH) {
                 mainBunyi('betul');
                 isAdminUnlocked = true;
-                if (passBox) passBox.classList.add('hidden');
                 if (errEl) errEl.classList.add('hidden');
+                if (passBox) passBox.classList.add('hidden');
                 if (bannerEl) bannerEl.classList.remove('hidden');
                 if (lockBtn) lockBtn.classList.add('unlocked');
                 if (lockIcon) lockIcon.textContent = '🔓';
-                paparSenaraiTop10UI();
+                muatSenaraiTop10DariAPI();
             } else {
                 mainBunyi('salah');
                 if (errEl) errEl.classList.remove('hidden');
@@ -4581,7 +4770,7 @@
             if (lockIcon) lockIcon.textContent = '🔒';
 
             if (!senyap) {
-                paparSenaraiTop10UI();
+                muatSenaraiTop10DariAPI();
             }
         }
 
@@ -4603,6 +4792,7 @@
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                     body: JSON.stringify({
                         action: 'delete',
+                        returnAll: true,
                         password: ADMIN_PASSWORD_SAH,
                         id: recordId
                     })
@@ -4654,7 +4844,17 @@
 
             padamAmaranNama();
             padamAmaranWatak();
+            bukaKunciAudio();
             mainBunyi('klik');
+
+            // Mulakan muzik latar belakang pada kelantangan seimbang supaya SFX jelas kedengaran
+            const bgMusic = document.getElementById('bg-music');
+            if (bgMusic && audioDibenarkan) {
+                bgMusic.volume = 0.28;
+                bgMusic.currentTime = 0;
+                bgMusic.play().catch(() => {});
+            }
+
             namaPemain = inputNama;
             kelasPemain = document.getElementById('input-kelas').value || "3 Imtiyaz";
             jantinaPemain = pilihanJantina;
@@ -4868,8 +5068,10 @@
             document.getElementById('hud-score').textContent = `💎 ${jumlahDiamond}`;
 
             if (indexHarta < senaraiHarta.length) {
-                document.getElementById('clue-title').textContent = `📜 Pembayang Harta Karun #${indexHarta + 1}`;
-                document.getElementById('clue-text').textContent = `"${senaraiHarta[indexHarta].pantun}"`;
+                const hartaSemasa = senaraiHarta[indexHarta];
+                const petunjukLokasi = hartaSemasa.lokasiNama ? ` • 📍 ${hartaSemasa.lokasiNama}` : '';
+                document.getElementById('clue-title').textContent = `📜 Pembayang Harta Karun #${indexHarta + 1}${petunjukLokasi}`;
+                document.getElementById('clue-text').textContent = `"${hartaSemasa.pantun}"`;
             }
 
             if (nyawa === 1 && schoolGrid) {
