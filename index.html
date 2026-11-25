@@ -699,7 +699,7 @@
             background: rgba(15, 23, 42, 0.48);
             border: 2px solid rgba(255, 255, 255, 0.3);
             border-radius: 50%;
-            display: none; /* Disembunyikan secara lalai */
+            display: none;
             z-index: 25;
             touch-action: none;
             backdrop-filter: blur(4px);
@@ -1489,7 +1489,7 @@
         // =========================================================================
         // 1. KONFIGURASI GLOBAL, PEMBOLEH UBAH TERAS & ENJIN THREE.JS
         // =========================================================================
-        const GOOGLE_SCRIPT_API_URL = ""; // Tampal URL Web App Google Apps Script anda di sini jika menggunakan storan awan
+        const GOOGLE_SCRIPT_API_URL = "https://script.google.com/macros/s/AKfycbyKT1Ev1wujT7SdJK9rXwzI1iipU8C7cR6YExbk7MiLbesdxkenvBmSURXcejDihbKJ/exec";
         const ADMIN_PASSWORD_SAH = "srati2001";
         const LOCAL_LEADERBOARD_KEY = "misi2_pemburu_harta_karun_records_v1";
 
@@ -1635,7 +1635,7 @@
                 .sort((a, b) => {
                     const masaA = Number(a.masaSaat) || 999999;
                     const masaB = Number(b.masaSaat) || 999999;
-                    if (masaA !== masaB) return masaA - masaB; // Masa paling cepat di atas
+                    if (masaA !== masaB) return masaA - masaB;
                     return (Number(b.diamond) || 0) - (Number(a.diamond) || 0);
                 });
             if (had && had > 0) {
@@ -1665,7 +1665,6 @@
         }
 
         async function hantarRekodPemenangKeAPI(rekodBaru) {
-            // Simpan terus pada sandaran tempatan tanpa had supaya admin dapat lihat semua peserta
             const senaraiTempatan = bacaRekodTempatan(true);
             senaraiTempatan.push(rekodBaru);
             senaraiTop10Semasa = simpanRekodTempatan(senaraiTempatan);
@@ -1909,7 +1908,6 @@
                 if (audioCtx.state === 'suspended') {
                     audioCtx.resume();
                 }
-                // Mainkan buffer senyap 1-sampel untuk membuka kunci audio pada iOS/Android
                 const buffer = audioCtx.createBuffer(1, 1, 22050);
                 const source = audioCtx.createBufferSource();
                 source.buffer = buffer;
@@ -1920,7 +1918,6 @@
             }
         }
 
-        // Buka kunci audio pada interaksi sentuhan atau klik pertama pemain
         ['pointerdown', 'touchstart', 'keydown'].forEach((evt) => {
             window.addEventListener(evt, bukaKunciAudio, { once: true, passive: true });
         });
@@ -2809,7 +2806,6 @@
             renderer.toneMapping = THREE.ACESFilmicToneMapping;
             renderer.toneMappingExposure = 1.05;
 
-            // Inisialisasi Geometri Shared untuk Debu (Elak Garbage Collection Pauses)
             debuGeo = new THREE.SphereGeometry(0.16, 6, 6);
             debuMat = new THREE.MeshBasicMaterial({ color: 0xe2e8f0, transparent: true, opacity: 0.55 });
 
@@ -2866,10 +2862,11 @@
             const tembok = 36;
             const cols = 8;
             const rows = 7;
-            const koridorW = 96;
-            const koridorH = 96;
-            const blokW = 200;
-            const blokH = 161;
+            // Menyekatakan laluan pejalan kaki agar sama besar di semua koridor (100x100)
+            const koridorW = 100;
+            const koridorH = 100;
+            const blokW = 196;
+            const blokH = 158;
 
             const kX = (c) => tembok + c * (koridorW + blokW);
             const kY = (r) => tembok + r * (koridorH + blokH);
@@ -3066,7 +3063,6 @@
             targetRing3D.visible = false;
             worldGroup.add(targetRing3D);
 
-            // Bina kolam zarah debu sedia ada (Pre-allocate Object Pool)
             for (let i = 0; i < 40; i++) {
                 const dMesh = new THREE.Mesh(debuGeo, debuMat);
                 dMesh.visible = false;
@@ -3713,7 +3709,6 @@
                     peha.castShadow = true;
                     hipPivot.add(peha);
                 } else {
-                    // Bahagian bawah dalam kain biru gelap
                     const dalamKain = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.78, 0.44), navyBlueMat);
                     dalamKain.position.y = -0.38;
                     hipPivot.add(dalamKain);
@@ -3725,7 +3720,6 @@
                 kasut.castShadow = true;
                 hipPivot.add(kasut);
 
-                // Stud blok LEGO pada bahagian hadapan kasut
                 const studKasut = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 0.08, 12), matKasut);
                 studKasut.position.set(0, -0.8, 0.24);
                 hipPivot.add(studKasut);
@@ -3746,13 +3740,11 @@
             playerGroup3D.add(pinggul);
 
             if (!isLelaki) {
-                // Kain susun/sarung biru gelap penuh (satu blok sarung berlipat, bukan seluar)
                 const kainSarung = new THREE.Mesh(new THREE.BoxGeometry(1.16, 0.86, 0.58), navyBlueMat);
                 kainSarung.position.y = 0.64;
                 kainSarung.castShadow = true;
                 playerGroup3D.add(kainSarung);
 
-                // Perincian lipatan kain susun di bahagian hadapan sisi
                 [-0.36, -0.22].forEach((lx) => {
                     const lipatan = new THREE.Mesh(
                         new THREE.BoxGeometry(0.06, 0.84, 0.04),
@@ -3778,17 +3770,14 @@
             bodyPivot.add(torso);
 
             if (isLelaki) {
-                // Kemeja kuning lembut di bahagian kolar V-neck
                 const dadaKuning = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.44, 0.08), kemejaKuningMat);
                 dadaKuning.position.set(0, 0.94, 0.36);
                 bodyPivot.add(dadaKuning);
 
-                // Tali leher biru gelap
                 const taliLeher = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.4, 0.1), navyBlueMat);
                 taliLeher.position.set(0, 0.92, 0.39);
                 bodyPivot.add(taliLeher);
 
-                // Lencana sekolah putih/merah & tanda nama merah jambu di dada kiri
                 const lencanaPutih = new THREE.Mesh(
                     new THREE.BoxGeometry(0.22, 0.25, 0.06),
                     new THREE.MeshStandardMaterial({ color: 0xffffff })
@@ -3810,7 +3799,6 @@
                 tandaNama.position.set(0.28, 0.65, 0.38);
                 bodyPivot.add(tandaNama);
             } else {
-                // Baju kurung putih labuh hingga paras lutut menutupi bahagian atas kain biru gelap
                 const labuhKurungLutut = new THREE.Mesh(new THREE.BoxGeometry(1.22, 0.84, 0.64), bajuPutihMat);
                 labuhKurungLutut.position.y = -0.22;
                 labuhKurungLutut.castShadow = true;
@@ -3842,7 +3830,6 @@
                 shoulderPivot.position.set(sisi * 0.72, 1.02, 0);
 
                 if (isLelaki) {
-                    // Lengan pendek putih di bahagian atas & lengan bawah kuning
                     const bahuPutih = new THREE.Mesh(new THREE.SphereGeometry(0.225, 12, 12), bajuPutihMat);
                     shoulderPivot.add(bahuPutih);
 
@@ -3856,7 +3843,6 @@
                     lenganKuning.castShadow = true;
                     shoulderPivot.add(lenganKuning);
                 } else {
-                    // Lengan panjang baju kurung putih berlapis blok
                     const bahuPutih = new THREE.Mesh(new THREE.SphereGeometry(0.22, 12, 12), tudungPutihMat);
                     shoulderPivot.add(bahuPutih);
 
@@ -3898,7 +3884,6 @@
             kepala.castShadow = true;
             headPivot.add(kepala);
 
-            // Kening & Mata LEGO Klasik (Tanpa Cermin Mata)
             [-0.16, 0.16].forEach((mx) => {
                 const kening = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.035, 0.04), hitamMat);
                 kening.position.set(mx, 0.69, 0.45);
@@ -3925,7 +3910,6 @@
             headPivot.add(senyum);
 
             if (isLelaki) {
-                // Rambut Hitam LEGO® berstud di atas kepala
                 const kubahRambut = new THREE.Mesh(
                     new THREE.SphereGeometry(0.495, 20, 14, 0, Math.PI * 2, 0, Math.PI * 0.54),
                     hitamMat
@@ -3948,7 +3932,6 @@
                     headPivot.add(studRambut);
                 });
             } else {
-                // Tudung Putih Labuh Gaya Blok LEGO®
                 const tudungBelakang = new THREE.Mesh(
                     new THREE.CylinderGeometry(0.51, 0.56, 0.88, 20, 1, false, Math.PI * 0.32, Math.PI * 1.36),
                     tudungPutihMat
@@ -3978,7 +3961,6 @@
                 daguTudung.position.set(0, 0.12, 0.06);
                 headPivot.add(daguTudung);
 
-                // Labuh tudung putih berlapis blok di bahagian dada
                 const labuhDadaBlok = new THREE.Mesh(new THREE.BoxGeometry(0.86, 0.74, 0.24), bajuPutihMat);
                 labuhDadaBlok.position.set(0, -0.34, 0.34);
                 labuhDadaBlok.castShadow = true;
@@ -4119,7 +4101,7 @@
                 const laluanBalik = laluanPergi.slice(1, -1).reverse();
                 const waypoints = [...laluanPergi, ...laluanBalik];
 
-                const laju = 0.72;
+                const laju = 0.78 + (idx % 3) * 0.08;
                 const zData = {
                     x: asal.x,
                     y: asal.y,
@@ -4127,14 +4109,16 @@
                     homeY: asal.y,
                     waypoints,
                     wpIndex: waypoints.length > 1 ? 1 : 0,
-                    waitTimer: (idx % 3) * 0.35,
+                    waitTimer: (idx % 3) * 0.25,
                     radius: 15,
                     speed: laju,
                     vx: 0,
                     vy: 0,
                     wobble: Math.random() * Math.PI * 2,
-                    wobbleSpeed: 0.6 + Math.random() * 0.8,
-                    wobbleAmp: 0.5 + Math.random() * 0.5
+                    wobbleSpeed: 2.2 + Math.random() * 1.4,
+                    wobbleAmp: 1.4 + Math.random() * 0.8,
+                    zigDir: idx % 2 === 0 ? 1 : -1,
+                    erraticTimer: 1.5 + Math.random() * 2.5
                 };
                 senaraiZombie.push(zData);
 
@@ -4298,13 +4282,12 @@
             kotak.castShadow = true;
             treasureChest3D.add(kotak);
 
-            // Pivot Kumpulan untuk Penutup Peti Harta Karun
             const penutupGroup = new THREE.Group();
-            penutupGroup.position.set(0, 1.4, -0.7); // Titik engsel di belakang
+            penutupGroup.position.set(0, 1.4, -0.7);
 
             const penutup = new THREE.Mesh(new THREE.CylinderGeometry(0.72, 0.72, 2.12, 14), kayuMat);
             penutup.rotation.z = Math.PI / 2;
-            penutup.position.set(0, 0, 0.7); // Letak kembali silinder ke titik tengah
+            penutup.position.set(0, 0, 0.7);
             penutupGroup.add(penutup);
 
             [-0.6, 0, 0.6].forEach((sx) => {
@@ -4318,7 +4301,7 @@
             penutupGroup.add(mangga);
 
             treasureChest3D.add(penutupGroup);
-            treasureChest3D.userData.penutupGroup = penutupGroup; // Simpan rujukan untuk animasi terbuka
+            treasureChest3D.userData.penutupGroup = penutupGroup;
 
             const aura = new THREE.Mesh(
                 new THREE.RingGeometry(1.1, 1.7, 28),
@@ -4393,7 +4376,6 @@
             }
         };
 
-        // Setiap lokasi mempunyai pantun pembayang tempat yang merujuk terus kepada bangunan/taman sekolah
         const LOKASI_PANTUN_SEKOLAH = [
             {
                 lokasiNama: "PADANG SEKOLAH & ASTAKA",
@@ -4778,7 +4760,6 @@
             if (!isAdminUnlocked) return;
             mainBunyi('klik');
 
-            // Padam dari senarai semasa & localStorage
             senaraiTop10Semasa = senaraiTop10Semasa.filter(item => String(item.id) !== String(recordId));
             simpanRekodTempatan(senaraiTop10Semasa);
             paparSenaraiTop10UI();
@@ -4812,13 +4793,12 @@
             const errEl = document.getElementById('nama-error-msg');
             const inputNama = inputEl ? inputEl.value.trim() : "";
 
-            // Wajibkan pemain mengisi Nama Murid sebelum memulakan permainan
             if (!inputNama) {
                 mainBunyi('salah');
                 if (errEl) errEl.classList.remove('hidden');
                 if (inputEl) {
                     inputEl.classList.remove('shake-error');
-                    void inputEl.offsetWidth; // Trigger semula animasi getaran
+                    void inputEl.offsetWidth;
                     inputEl.classList.add('shake-error');
                     inputEl.focus();
                 }
@@ -4830,7 +4810,6 @@
             const errWatakEl = document.getElementById('watak-error-msg');
             const gridWatakEl = document.getElementById('character-grid-box');
 
-            // Wajibkan pemain menekan & memilih salah satu watak di menu utama
             if (!pilihanJantina) {
                 mainBunyi('salah');
                 if (errWatakEl) errWatakEl.classList.remove('hidden');
@@ -4847,7 +4826,6 @@
             bukaKunciAudio();
             mainBunyi('klik');
 
-            // Mulakan muzik latar belakang pada kelantangan seimbang supaya SFX jelas kedengaran
             const bgMusic = document.getElementById('bg-music');
             if (bgMusic && audioDibenarkan) {
                 bgMusic.volume = 0.28;
@@ -4869,7 +4847,6 @@
             const pauseScreen = document.getElementById('pause-screen');
             if (pauseScreen) pauseScreen.classList.add('hidden');
 
-            // Buang permata lama jika ada (bila reset / main semula)
             for (let p of permataList3D) worldGroup.remove(p.mesh);
             permataList3D = [];
 
@@ -4877,7 +4854,6 @@
             pemasaSuasana = TEMPOH_SUASANA;
             faktorSenja = 0;
 
-            // Tetapkan mod kamera lalai kepada FPV / Belakang Watak ('chase') setiap kali permainan bermula
             cameraMode = 'chase';
             cameraYaw = 0;
             cameraPitch = 0;
@@ -4923,7 +4899,6 @@
             const btn = document.getElementById('btn-kamera');
             if (btn) btn.textContent = cameraMode === 'iso' ? '🎥' : '📷';
 
-            // Selaraskan orientasi kamera & haluan watak apabila bertukar mod
             if (cameraMode === 'chase') {
                 cameraYaw = 0;
                 cameraPitch = 0;
@@ -4936,7 +4911,6 @@
                 paparToast('🎥 Sudut Kamera: Pandangan Atas 3D');
             }
 
-            // Papar Joystick pada mod FPV/Chase untuk kawalan lancar
             const joystick = document.getElementById('joystick-zone');
             if (joystick) {
                 const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (navigator.msMaxTouchPoints > 0) || window.innerWidth <= 900;
@@ -4953,7 +4927,6 @@
             const btnPause = document.getElementById('btn-pause');
             const bgMusic = document.getElementById('bg-music');
 
-            // Hentikan pergerakan semasa jika sedang berjalan
             player.targetX = null;
             player.targetY = null;
             player.targetRun = false;
@@ -4982,7 +4955,6 @@
                 const pauseScreen = document.getElementById('pause-screen');
                 if (pauseScreen) pauseScreen.classList.add('hidden');
             } else {
-                // Hentikan kuiz sementara jika pemain menekan Quit semasa kuiz terbuka
                 clearInterval(quizTimerInterval);
                 const quizScreen = document.getElementById('quiz-screen');
                 if (quizScreen) quizScreen.classList.add('hidden');
@@ -5014,7 +4986,6 @@
         function laksanakanQuitKeMenu() {
             clearInterval(quizTimerInterval);
 
-            // Hentikan semua status permainan tanpa merekodkan ke Google Script API / Top 10
             gameStarted = false;
             isPaused = false;
             isQuizActive = false;
@@ -5023,7 +4994,6 @@
             isMoving = false;
             isRunning = false;
 
-            // Set semula skor dan pemasa sesi semasa
             nyawa = 3;
             indexHarta = 0;
             jumlahDiamond = 0;
@@ -5044,7 +5014,6 @@
                 bgMusic.currentTime = 0;
             }
 
-            // Tutup semua paparan permainan & tunjuk semula skrin pendaftaran pemain
             document.getElementById('message-screen').classList.add('hidden');
             document.getElementById('pause-screen').classList.add('hidden');
             document.getElementById('quiz-screen').classList.add('hidden');
@@ -5084,7 +5053,6 @@
         }
 
         function ciptaKonfeti3D(x3d, z3d) {
-            // MENGGUNAKAN PENGOPTIMUMAN GEOMETRI & MATERIAL (Guna semula)
             if (!konfetiGeo) konfetiGeo = new THREE.BoxGeometry(0.24, 0.24, 0.08);
             if (konfetiMats.length === 0) {
                 const warnaK = [0xfacc15, 0x10b981, 0x38bdf8, 0xf472b6, 0xf97316];
@@ -5163,26 +5131,29 @@
                     diamond: jumlahDiamond,
                     tarikh: tarikhHariIni
                 };
-
-                // Hantar dan rekodkan pemenang ke Google Script API & senarai Top 10
                 hantarRekodPemenangKeAPI(rekodPemenangBaru);
 
                 tunjukMesej(
-                    "🏆 Tahniah, Juara Bahasa!",
-                    `Syabas ${namaPemain} dari kelas ${kelasPemain}! Rekod masa anda (${formatMasa}) telah disimpan ke papan kedudukan! Jumlah permata: ${jumlahDiamond} 💎.`,
+                    "🏆 Tahniah, Pemburu Harta Karun!",
+                    `Syabas ${namaPemain} (${kelasPemain})!\n\nAnda berjaya membuka kesemua 5 peti harta karun sekolah dan mengumpul 💎 ${jumlahDiamond} Permata dalam masa ⏱️ ${formatMasa}!\n\nCatatan masa anda telah direkodkan ke dalam papan kedudukan.`,
                     "🏆 Lihat Kedudukan",
                     () => {
                         document.getElementById('message-screen').classList.add('hidden');
-                        document.getElementById('start-screen').classList.remove('hidden');
-                        gameStarted = false;
+                        isMessageActive = false;
                         bukaSemakKedudukan();
+                    },
+                    "🔄 Main Semula",
+                    () => {
+                        document.getElementById('message-screen').classList.add('hidden');
+                        isMessageActive = false;
+                        laksanakanQuitKeMenu();
                     }
                 );
             } else {
                 tunjukMesej(
-                    "✨ Jawapan Tepat!",
-                    `Hebat ${namaPemain} (${kelasPemain})! Peti berjaya dibuka & 10 💎 diperoleh!${ulasanSkema} Teruskan pencarian anda.`,
-                    "Teruskan Misi",
+                    "✅ Jawapan Tepat! (+10 💎)",
+                    `Tahniah! Peti Harta Karun #${indexHarta} berjaya dibuka.\n\n📘 Info Tatabahasa: ${ulasanSkema}\n\nBaca pembayang pantun baharu di bahagian bawah untuk mencari peti seterusnya!`,
+                    "Teruskan Pencarian",
                     () => {
                         document.getElementById('message-screen').classList.add('hidden');
                         isMessageActive = false;
@@ -5191,29 +5162,39 @@
             }
         }
 
-        function bukaKuiz(harta) {
+        function bukaKuiz() {
+            if (isQuizActive || isMessageActive || isAnimasiPeti || indexHarta >= senaraiHarta.length) return;
             isQuizActive = true;
+            isMoving = false;
+            isRunning = false;
             player.targetX = null;
             player.targetY = null;
+            player.targetRun = false;
             if (targetRing3D) targetRing3D.visible = false;
-            mainBunyi('peti');
+            joystickData.active = false;
+            joystickData.vecX = 0;
+            joystickData.vecY = 0;
 
-            masaKuiz = 20;
-            document.getElementById('quiz-timer').textContent = `⏳ Masa: ${masaKuiz}s`;
-            document.getElementById('quiz-question').textContent = harta.soalan;
+            const h = senaraiHarta[indexHarta];
+            const skema = SKEMA_JAWAPAN_BM[h.soalanId];
+            const indeksBetul = skema ? skema.jawapanIndex : h.jawapan;
+
+            document.getElementById('quiz-question').textContent = `Soalan Harta Karun #${indexHarta + 1}: ${h.soalan}`;
 
             const optionsDiv = document.getElementById('quiz-options');
             optionsDiv.innerHTML = '';
 
             const huruf = ['A', 'B', 'C', 'D'];
-            harta.pilihan.forEach((teks, idx) => {
+            h.pilihan.forEach((pilihanTeks, idx) => {
                 const btn = document.createElement('button');
                 btn.className = 'quiz-btn';
-                btn.textContent = `${huruf[idx]}. ${teks}`;
-                btn.onclick = () => semakJawapan(idx);
+                btn.textContent = `${huruf[idx]}. ${pilihanTeks}`;
+                btn.onclick = () => semakJawapanKuiz(idx === indeksBetul);
                 optionsDiv.appendChild(btn);
             });
 
+            masaKuiz = 20;
+            document.getElementById('quiz-timer').textContent = `⏳ Masa: ${masaKuiz}s`;
             document.getElementById('quiz-screen').classList.remove('hidden');
 
             clearInterval(quizTimerInterval);
@@ -5222,81 +5203,77 @@
                 document.getElementById('quiz-timer').textContent = `⏳ Masa: ${masaKuiz}s`;
                 if (masaKuiz <= 0) {
                     clearInterval(quizTimerInterval);
-                    semakJawapan(-1);
+                    semakJawapanKuiz(false, true);
                 }
             }, 1000);
         }
 
-        function semakJawapan(pilihanIdx) {
+        function semakJawapanKuiz(isBetul, masaTamat = false) {
             clearInterval(quizTimerInterval);
             document.getElementById('quiz-screen').classList.add('hidden');
             isQuizActive = false;
 
-            const hartaSemasa = senaraiHarta[indexHarta];
-            const skema = SKEMA_JAWAPAN_BM[hartaSemasa.soalanId];
-            const jawapanSah = skema ? skema.jawapanIndex : hartaSemasa.jawapan;
-            const ulasanSkema = skema ? ` (${skema.tajuk}: ${skema.ulasan})` : "";
+            const h = senaraiHarta[indexHarta];
+            const skema = SKEMA_JAWAPAN_BM[h.soalanId];
+            const ulasanSkema = skema ? skema.ulasan : "";
 
-            if (pilihanIdx === jawapanSah) {
-                isAnimasiPeti = true;
+            if (isBetul) {
                 mainBunyi('betul');
-                ciptaKonfeti3D(to3DX(hartaSemasa.x), to3DZ(hartaSemasa.y));
-                ciptaPancuranPermata(to3DX(hartaSemasa.x), to3DZ(hartaSemasa.y));
-                
-                // Menjalankan animasi perlahan-lahan membuka penutup peti (engsel berputar)
-                let openProgress = 0;
+                mainBunyi('peti');
+                isAnimasiPeti = true;
+
+                const chestX3 = to3DX(h.x);
+                const chestZ3 = to3DZ(h.y);
+                ciptaKonfeti3D(chestX3, chestZ3);
+                ciptaPancuranPermata(chestX3, chestZ3);
+
+                let progressBuka = 0;
                 const animInterval = setInterval(() => {
-                    openProgress += 0.05;
+                    progressBuka += 0.06;
                     if (treasureChest3D && treasureChest3D.userData.penutupGroup) {
-                        treasureChest3D.userData.penutupGroup.rotation.x = -Math.min(openProgress, Math.PI / 1.8);
+                        treasureChest3D.userData.penutupGroup.rotation.x = -Math.min(progressBuka, 1.0) * (Math.PI * 0.55);
                     }
-                    if (openProgress >= 1.5) {
+                    if (progressBuka >= 1.15) {
                         clearInterval(animInterval);
-                        selesaiAnimasiPeti(hartaSemasa, ulasanSkema);
+                        selesaiAnimasiPeti(h, ulasanSkema);
                     }
-                }, 50);
+                }, 30);
             } else {
                 mainBunyi('salah');
                 nyawa--;
                 screenShake = 14;
-                const flashEl = document.getElementById('damage-flash');
-                flashEl.style.opacity = '1';
-                setTimeout(() => { flashEl.style.opacity = '0'; }, 240);
                 kemaskiniHUD();
 
-                const anjakan = [[0, 34], [0, -34], [34, 0], [-34, 0]];
-                for (let [ax, ay] of anjakan) {
-                    if (!semakPelanggaran(player.x + ax, player.y + ay, player.radius)) {
-                        player.x += ax;
-                        player.y += ay;
-                        break;
-                    }
+                const flash = document.getElementById('damage-flash');
+                if (flash) {
+                    flash.style.opacity = '1';
+                    setTimeout(() => { flash.style.opacity = '0'; }, 240);
                 }
 
                 if (nyawa <= 0) {
                     const bgMusic = document.getElementById('bg-music');
                     if (bgMusic) bgMusic.pause();
-
                     tunjukMesej(
-                        "💀 Permainan Tamat!",
-                        `Maaf ${namaPemain} (${kelasPemain}), nyawa anda telah habis. Jangan putus asa, cuba lagi dan takluki sekolah ini!`,
-                        "Cuba Lagi",
+                        "💔 Misi Gagal!",
+                        masaTamat
+                            ? "Masa menjawab soalan telah tamat dan nyawa anda telah habis!"
+                            : "Jawapan kurang tepat dan nyawa anda telah habis! Jangan putus asa, cuba lagi.",
+                        "🔄 Cuba Semula",
                         () => {
                             document.getElementById('message-screen').classList.add('hidden');
-                            document.getElementById('start-screen').classList.remove('hidden');
-                            gameStarted = false;
+                            isMessageActive = false;
+                            laksanakanQuitKeMenu();
                         }
                     );
                 } else {
-                    const tajukMakluman = pilihanIdx === -1 ? "⏰ Masa Tamat!" : "❌ Jawapan Kurang Tepat!";
-                    const teksMakluman = pilihanIdx === -1
-                        ? `Masa menjawab telah tamat! Nyawa ditolak 1 (Baki: ${nyawa} ❤️).${ulasanSkema}`
-                        : `Jawapan anda kurang tepat! Nyawa ditolak 1 (Baki: ${nyawa} ❤️).${ulasanSkema}`;
+                    player.x = titikMulaPemain.x;
+                    player.y = titikMulaPemain.y;
+                    player.invulnerable = 90;
 
                     tunjukMesej(
-                        tajukMakluman,
-                        teksMakluman,
-                        "Cuba Semula",
+                        masaTamat ? "⏳ Masa Tamat! (-1 ❤️)" : "❌ Jawapan Kurang Tepat! (-1 ❤️)",
+                        `Anda kehilangan 1 nyawa dan dihantar semula ke titik permulaan.\n\n💡 Petunjuk (${skema ? skema.tajuk : 'Tatabahasa'}): ${ulasanSkema}`,
+                        "Teruskan Misi",
                         () => {
                             document.getElementById('message-screen').classList.add('hidden');
                             isMessageActive = false;
@@ -5306,29 +5283,29 @@
             }
         }
 
-        function tunjukMesej(tajuk, isi, teksButang, tindakan, teksButangKedua = null, tindakanKedua = null) {
+        function tunjukMesej(tajuk, badan, teksButang, callback, teksButangKedua = null, callbackKedua = null) {
             isMessageActive = true;
             document.getElementById('msg-title').textContent = tajuk;
-            document.getElementById('msg-body').textContent = isi;
+            document.getElementById('msg-body').innerHTML = escapeHTML(badan).replace(/\n/g, '<br>');
             const btn = document.getElementById('msg-btn');
             btn.textContent = teksButang;
             btn.onclick = () => {
                 mainBunyi('klik');
-                tindakan();
+                if (callback) callback();
             };
 
-            const btnSec = document.getElementById('msg-btn-secondary');
-            if (btnSec) {
-                if (teksButangKedua && tindakanKedua) {
-                    btnSec.textContent = teksButangKedua;
-                    btnSec.classList.remove('hidden');
-                    btnSec.onclick = () => {
+            const btn2 = document.getElementById('msg-btn-secondary');
+            if (btn2) {
+                if (teksButangKedua) {
+                    btn2.textContent = teksButangKedua;
+                    btn2.classList.remove('hidden');
+                    btn2.onclick = () => {
                         mainBunyi('klik');
-                        tindakanKedua();
+                        if (callbackKedua) callbackKedua();
                     };
                 } else {
-                    btnSec.classList.add('hidden');
-                    btnSec.onclick = null;
+                    btn2.classList.add('hidden');
+                    btn2.onclick = null;
                 }
             }
 
@@ -5336,684 +5313,546 @@
         }
 
         // =========================================================================
-        // 10. KAWALAN INPUT TOUCH / KLIK & PUTARAN KAMERA 360° (MULTI-TOUCH FPV)
+        // 10. KAWALAN INPUT 3D (TOUCH SLIDE / DRAG ROTATE + JOYSTICK + PAPAN KEKUNCI)
         // =========================================================================
-        function setupJoystick() {
-            const zone = document.getElementById('joystick-zone');
-            const knob = document.getElementById('joystick-knob');
-            if (!zone || !knob) return;
-            
-            const maxRadius = 42;
-            let centerX = 0, centerY = 0;
+        const keys = {};
+        let isDraggingCamera = false;
+        let lastMouseX = 0;
+        let lastMouseY = 0;
+        let kameraTouchId = null;
+        let pointerDownX = 0;
+        let pointerDownY = 0;
+        let lastTapTime = 0;
+        let lastTapX = 0;
+        let lastTapY = 0;
 
-            const resetJoystick = () => {
-                joystickData.active = false;
-                joystickData.vecX = 0;
-                joystickData.vecY = 0;
-                joystickData.touchId = null;
-                knob.style.transform = `translate(-50%, -50%)`;
-                knob.style.background = 'rgba(255, 255, 255, 0.88)';
-            };
+        function sahkanTitikSasaranBolehSampai(tx, ty) {
+            if (tx < 45 || tx > MAP_WIDTH - 45 || ty < 45 || ty > MAP_HEIGHT - 45) return false;
+            return !semakPelanggaran(tx, ty, player.radius - 2);
+        }
 
-            zone.addEventListener('pointerdown', (e) => {
-                e.stopPropagation();
-                if (joystickData.active) return;
-                joystickData.active = true;
-                joystickData.touchId = e.pointerId;
-                const rect = zone.getBoundingClientRect();
-                centerX = rect.left + rect.width / 2;
-                centerY = rect.top + rect.height / 2;
-                knob.style.background = 'rgba(250, 204, 21, 0.95)';
-                zone.setPointerCapture(e.pointerId);
-                handleMove(e);
-            });
+        function mulaSeretanKamera(x, y) {
+            isDraggingCamera = true;
+            lastMouseX = x;
+            lastMouseY = y;
+            pointerDownX = x;
+            pointerDownY = y;
+        }
 
-            const handleMove = (e) => {
-                if (!joystickData.active || e.pointerId !== joystickData.touchId) return;
-                
-                let dx = e.clientX - centerX;
-                let dy = e.clientY - centerY;
-                const dist = Math.hypot(dx, dy);
-                
-                if (dist > maxRadius) {
-                    dx = (dx / dist) * maxRadius;
-                    dy = (dy / dist) * maxRadius;
+        function gerakSeretanKamera(x, y) {
+            if (!isDraggingCamera) return;
+            const dx = x - lastMouseX;
+            const dy = y - lastMouseY;
+            lastMouseX = x;
+            lastMouseY = y;
+
+            const kepekaanPutaran = cameraMode === 'chase' ? 0.0085 : 0.007;
+            cameraYaw -= dx * kepekaanPutaran;
+
+            if (cameraMode === 'chase') {
+                cameraPitch = Math.max(-0.42, Math.min(0.48, cameraPitch + dy * 0.006));
+            }
+        }
+
+        function tamatSeretanKamera(x, y) {
+            if (!isDraggingCamera) return;
+            isDraggingCamera = false;
+
+            const jarakSeret = Math.hypot(x - pointerDownX, y - pointerDownY);
+            if (jarakSeret < 10 && gameStarted && !isPaused && !isQuizActive && !isMessageActive && !isAnimasiPeti) {
+                if (cameraMode === 'iso') {
+                    kendaliKlikTapPeta(x, y);
                 }
-                
-                knob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
-                
-                // Normalize (-1 ke 1)
-                joystickData.vecX = dx / maxRadius;
-                joystickData.vecY = dy / maxRadius; 
-            };
-
-            zone.addEventListener('pointermove', (e) => {
-                e.stopPropagation();
-                handleMove(e);
-            });
-            zone.addEventListener('pointerup', resetJoystick);
-            zone.addEventListener('pointercancel', resetJoystick);
+            }
         }
 
         function setupKawalanInput3D() {
             const container = document.getElementById('webgl-container');
-            let isDragging = false;
-            let dragMoved = false;
-            let activeSlideTouchId = null;
-            let prevX = 0;
-            let prevY = 0;
-            let downX = 0;
-            let downY = 0;
 
-            const pilihDestinasi3D = (clientX, clientY) => {
-                if (!gameStarted || isQuizActive || isMessageActive || !groundPlaneMesh) return;
-
-                const rect = renderer.domElement.getBoundingClientRect();
-                mouseVec.x = ((clientX - rect.left) / rect.width) * 2 - 1;
-                mouseVec.y = -((clientY - rect.top) / rect.height) * 2 + 1;
-
-                raycaster.setFromCamera(mouseVec, camera3D);
-                const hits = raycaster.intersectObject(groundPlaneMesh);
-                if (hits.length > 0) {
-                    const pt = hits[0].point;
-                    const destX = Math.max(52, Math.min(MAP_WIDTH - 52, to2DX(pt.x)));
-                    const destY = Math.max(52, Math.min(MAP_HEIGHT - 52, to2DY(pt.z)));
-
-                    const jarak = Math.hypot(destX - player.x, destY - player.y);
-                    player.targetX = destX;
-                    player.targetY = destY;
-                    player.targetRun = jarak > 175;
-
-                    if (targetRing3D) {
-                        targetRing3D.position.set(to3DX(destX), 0.1, to3DZ(destY));
-                        targetRing3D.material.color.setHex(player.targetRun ? 0xfacc15 : 0x38bdf8);
-                        targetRing3D.visible = true;
+            window.addEventListener('keydown', (e) => {
+                keys[e.key.toLowerCase()] = true;
+                if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) {
+                    e.preventDefault();
+                }
+                if (e.key.toLowerCase() === 'p' || e.key === 'Escape') {
+                    if (gameStarted && !isQuizActive && !isMessageActive && !isAnimasiPeti) {
+                        togolPausePermainan();
                     }
                 }
-            };
-
-            const terapkanSlideKamera = (dx, dy) => {
-                if (cameraMode === 'chase') {
-                    // Dalam mod FPV / Chase: Touch slide kiri/kanan terus memusingkan pandangan & haluan watak
-                    player.angle += dx * 0.0068;
-                    cameraYaw = 0;
-                    cameraPitch = Math.max(-0.35, Math.min(0.45, cameraPitch + dy * 0.0045));
-                } else {
-                    cameraYaw -= dx * 0.0065;
-                }
-            };
+            });
+            window.addEventListener('keyup', (e) => {
+                keys[e.key.toLowerCase()] = false;
+            });
 
             container.addEventListener('mousedown', (e) => {
-                isDragging = true;
-                dragMoved = false;
-                prevX = e.clientX;
-                prevY = e.clientY;
-                downX = e.clientX;
-                downY = e.clientY;
+                if (e.button === 0) mulaSeretanKamera(e.clientX, e.clientY);
             });
-
             window.addEventListener('mousemove', (e) => {
-                if (!isDragging) return;
-                const dx = e.clientX - prevX;
-                const dy = e.clientY - prevY;
-                if (Math.hypot(e.clientX - downX, e.clientY - downY) > 6) {
-                    dragMoved = true;
-                }
-                if (dragMoved) {
-                    terapkanSlideKamera(dx, dy);
-                }
-                prevX = e.clientX;
-                prevY = e.clientY;
+                gerakSeretanKamera(e.clientX, e.clientY);
             });
-
             window.addEventListener('mouseup', (e) => {
-                if (isDragging && !dragMoved) {
-                    pilihDestinasi3D(e.clientX, e.clientY);
-                }
-                isDragging = false;
+                tamatSeretanKamera(e.clientX, e.clientY);
             });
 
-            container.addEventListener('wheel', (e) => {
-                cameraZoom = Math.max(0.65, Math.min(1.55, cameraZoom + e.deltaY * 0.0008));
-            }, { passive: true });
-
-            // Sokongan Multi-Touch: Ibu jari kiri boleh kawal Joystick manakala ibu jari kanan slide skrin serentak!
             container.addEventListener('touchstart', (e) => {
-                if (activeSlideTouchId === null && e.changedTouches.length > 0) {
-                    const t = e.changedTouches[0];
-                    activeSlideTouchId = t.identifier;
-                    isDragging = true;
-                    dragMoved = false;
-                    prevX = t.clientX;
-                    prevY = t.clientY;
-                    downX = t.clientX;
-                    downY = t.clientY;
+                for (let i = 0; i < e.changedTouches.length; i++) {
+                    const t = e.changedTouches[i];
+                    if (t.target && t.target.closest && t.target.closest('#joystick-zone')) continue;
+                    if (kameraTouchId === null) {
+                        kameraTouchId = t.identifier;
+                        mulaSeretanKamera(t.clientX, t.clientY);
+                    }
                 }
             }, { passive: true });
 
             container.addEventListener('touchmove', (e) => {
-                if (!isDragging || activeSlideTouchId === null) return;
                 for (let i = 0; i < e.changedTouches.length; i++) {
                     const t = e.changedTouches[i];
-                    if (t.identifier === activeSlideTouchId) {
-                        const tx = t.clientX;
-                        const ty = t.clientY;
-                        if (Math.hypot(tx - downX, ty - downY) > 7) {
-                            dragMoved = true;
-                        }
-                        if (dragMoved) {
-                            terapkanSlideKamera(tx - prevX, ty - prevY);
-                        }
-                        prevX = tx;
-                        prevY = ty;
-                        break;
+                    if (t.identifier === kameraTouchId) {
+                        gerakSeretanKamera(t.clientX, t.clientY);
                     }
                 }
             }, { passive: true });
 
-            const tamatTouchSlide = (e) => {
-                if (activeSlideTouchId === null) return;
+            const tamatSentuhanKamera = (e) => {
                 for (let i = 0; i < e.changedTouches.length; i++) {
                     const t = e.changedTouches[i];
-                    if (t.identifier === activeSlideTouchId) {
-                        if (isDragging && !dragMoved) {
-                            pilihDestinasi3D(t.clientX, t.clientY);
-                        }
-                        isDragging = false;
-                        activeSlideTouchId = null;
-                        break;
+                    if (t.identifier === kameraTouchId) {
+                        tamatSeretanKamera(t.clientX, t.clientY);
+                        kameraTouchId = null;
                     }
                 }
             };
+            container.addEventListener('touchend', tamatSentuhanKamera, { passive: true });
+            container.addEventListener('touchcancel', tamatSentuhanKamera, { passive: true });
 
-            container.addEventListener('touchend', tamatTouchSlide);
-            container.addEventListener('touchcancel', tamatTouchSlide);
+            container.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                cameraZoom = Math.max(0.65, Math.min(1.65, cameraZoom + e.deltaY * 0.0008));
+            }, { passive: false });
+
+            const joyZone = document.getElementById('joystick-zone');
+            const joyKnob = document.getElementById('joystick-knob');
+            if (joyZone && joyKnob) {
+                const maxDist = 42;
+                const kemaskiniJoystick = (clientX, clientY) => {
+                    const rect = joyZone.getBoundingClientRect();
+                    const cx = rect.left + rect.width / 2;
+                    const cy = rect.top + rect.height / 2;
+                    let dx = clientX - cx;
+                    let dy = clientY - cy;
+                    const dist = Math.hypot(dx, dy);
+
+                    if (dist > maxDist) {
+                        dx = (dx / dist) * maxDist;
+                        dy = (dy / dist) * maxDist;
+                    }
+
+                    joyKnob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+                    joystickData.vecX = dx / maxDist;
+                    joystickData.vecY = dy / maxDist;
+                    player.targetX = null;
+                    player.targetY = null;
+                    if (targetRing3D) targetRing3D.visible = false;
+                };
+
+                joyZone.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const t = e.changedTouches[0];
+                    joystickData.active = true;
+                    joystickData.touchId = t.identifier;
+                    kemaskiniJoystick(t.clientX, t.clientY);
+                }, { passive: false });
+
+                joyZone.addEventListener('touchmove', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (!joystickData.active) return;
+                    for (let i = 0; i < e.changedTouches.length; i++) {
+                        if (e.changedTouches[i].identifier === joystickData.touchId) {
+                            kemaskiniJoystick(e.changedTouches[i].clientX, e.changedTouches[i].clientY);
+                        }
+                    }
+                }, { passive: false });
+
+                const tamatJoystick = (e) => {
+                    for (let i = 0; i < e.changedTouches.length; i++) {
+                        if (e.changedTouches[i].identifier === joystickData.touchId) {
+                            joystickData.active = false;
+                            joystickData.touchId = null;
+                            joystickData.vecX = 0;
+                            joystickData.vecY = 0;
+                            joyKnob.style.transform = `translate(-50%, -50%)`;
+                        }
+                    }
+                };
+                joyZone.addEventListener('touchend', tamatJoystick);
+                joyZone.addEventListener('touchcancel', tamatJoystick);
+            }
         }
 
-        // =========================================================================
-        // 11. LUKISAN MINI-MAP LUTSINAR 2D (DILARAS MENGIKUT LEBAR KONTAINER 9:16)
-        // =========================================================================
-        function lukisMiniMap() {
-            const gameEl = document.getElementById('game-container');
-            const containerW = gameEl ? gameEl.clientWidth : window.innerWidth;
-            const targetMmW = Math.max(96, Math.min(122, Math.round(containerW * 0.28)));
-            const scale = targetMmW / MAP_WIDTH;
-            const mmW = Math.round(MAP_WIDTH * scale);
-            const mmH = Math.round(MAP_HEIGHT * scale);
+        function kendaliKlikTapPeta(clientX, clientY) {
+            if (!renderer || !camera3D || !groundPlaneMesh) return;
+            const rect = renderer.domElement.getBoundingClientRect();
+            mouseVec.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+            mouseVec.y = -((clientY - rect.top) / rect.height) * 2 + 1;
 
-            if (minimapCanvas.width !== mmW || minimapCanvas.height !== mmH) {
-                minimapCanvas.width = mmW;
-                minimapCanvas.height = mmH;
-            }
+            raycaster.setFromCamera(mouseVec, camera3D);
+            const hits = raycaster.intersectObject(groundPlaneMesh);
+            if (hits.length > 0) {
+                const pt = hits[0].point;
+                const tx = to2DX(pt.x);
+                const ty = to2DY(pt.z);
 
-            mmCtx.clearRect(0, 0, mmW, mmH);
-            mmCtx.fillStyle = 'rgba(30, 41, 59, 0.85)';
-            mmCtx.fillRect(0, 0, mmW, mmH);
+                if (sahkanTitikSasaranBolehSampai(tx, ty)) {
+                    const now = performance.now();
+                    const isDoubleTap = (now - lastTapTime < 340) && (Math.hypot(clientX - lastTapX, clientY - lastTapY) < 42);
+                    lastTapTime = now;
+                    lastTapX = clientX;
+                    lastTapY = clientY;
 
-            for (let d of senaraiDinding) {
-                if (d.jenis === 'padang') mmCtx.fillStyle = '#22c55e';
-                else if (d.jenis === 'taman_sains' || d.jenis === 'taman_lestari' || d.jenis === 'pergola') mmCtx.fillStyle = '#15803d';
-                else mmCtx.fillStyle = '#94a3b8';
+                    player.targetX = tx;
+                    player.targetY = ty;
+                    player.targetRun = isDoubleTap;
 
-                mmCtx.fillRect(
-                    d.x * scale,
-                    d.y * scale,
-                    Math.max(1.5, d.w * scale),
-                    Math.max(1.5, d.h * scale)
-                );
-            }
-
-            mmCtx.fillStyle = '#fb7185';
-            for (let item of senaraiNyawaTerapung) {
-                if (!item.collected) {
-                    mmCtx.beginPath();
-                    mmCtx.arc(item.x * scale, item.y * scale, 2.8, 0, Math.PI * 2);
-                    mmCtx.fill();
-                }
-            }
-
-            mmCtx.fillStyle = '#4ade80';
-            for (let z of senaraiZombie) {
-                mmCtx.beginPath();
-                mmCtx.arc(z.x * scale, z.y * scale, 2.2, 0, Math.PI * 2);
-                mmCtx.fill();
-            }
-
-            // Penunjuk arah pandangan pemain pada Mini-Map
-            const pxMm = player.x * scale;
-            const pyMm = player.y * scale;
-            mmCtx.strokeStyle = '#fde047';
-            mmCtx.lineWidth = 1.6;
-            mmCtx.beginPath();
-            mmCtx.moveTo(pxMm, pyMm);
-            mmCtx.lineTo(pxMm + Math.cos(player.angle) * 9, pyMm + Math.sin(player.angle) * 9);
-            mmCtx.stroke();
-
-            mmCtx.fillStyle = '#38bdf8';
-            mmCtx.beginPath();
-            mmCtx.arc(pxMm, pyMm, 3.4, 0, Math.PI * 2);
-            mmCtx.fill();
-        }
-
-        // =========================================================================
-        // 12. GELUNG KEMAS KINI LOGIK & ANIMASI UTAMA
-        // =========================================================================
-        function update(dt) {
-            const masa = performance.now() * 0.001;
-
-            // Animasi Fizik Pancuran Permata Peti Harta Karun
-            for (let i = permataList3D.length - 1; i >= 0; i--) {
-                const p = permataList3D[i];
-                p.life -= dt;
-                p.vy -= dt * 0.9; // graviti jatuh
-                p.mesh.position.x += p.vx;
-                p.mesh.position.y += p.vy;
-                p.mesh.position.z += p.vz;
-                p.mesh.rotation.x += 0.2;
-                p.mesh.rotation.y += 0.2;
-                
-                // Melantun apabila cecah tanah
-                if (p.life <= 0 || p.mesh.position.y < 0.2) {
-                    if (p.life <= 0) {
-                        worldGroup.remove(p.mesh);
-                        permataList3D.splice(i, 1);
-                    } else {
-                        p.mesh.position.y = 0.2;
-                        p.vy *= -0.5; // tenaga lantunan kurang
-                        p.vx *= 0.8;  // rintangan tanah
-                        p.vz *= 0.8;
+                    if (targetRing3D) {
+                        targetRing3D.position.set(pt.x, 0.08, pt.z);
+                        targetRing3D.material.color.setHex(isDoubleTap ? 0xf59e0b : 0x38bdf8);
+                        targetRing3D.visible = true;
                     }
                 }
             }
+        }
 
-            for (let k of koiMeshes) {
-                k.angle += k.speed;
-                k.mesh.position.set(k.cx + Math.cos(k.angle) * k.rx, 0.36, k.cz + Math.sin(k.angle) * k.rz);
-                const arah = Math.atan2(
-                    Math.cos(k.angle) * k.rz * (k.speed > 0 ? 1 : -1),
-                    -Math.sin(k.angle) * k.rx * (k.speed > 0 ? 1 : -1)
-                );
-                k.mesh.rotation.y = arah;
-            }
+        // =========================================================================
+        // 11. KEMASKINI LOGIK PERMAINAN, AI ZOMBIE & SUASANA SIANG/SENJA
+        // =========================================================================
+        function hasilkanDebuLangkah(x3d, z3d) {
+            if (dustPool.length === 0) return;
+            const d = dustPool[dustIndex];
+            dustIndex = (dustIndex + 1) % dustPool.length;
+            d.mesh.position.set(x3d + (Math.random() - 0.5) * 0.4, 0.14, z3d + (Math.random() - 0.5) * 0.4);
+            d.mesh.scale.setScalar(1);
+            d.mesh.visible = true;
+            d.life = 1.0;
+        }
 
-            for (let wb of windmillBlades) {
-                wb.rotation.z += dt * 1.6;
-            }
-
-            for (let fl of flagMeshes) {
-                fl.mesh.rotation.y = Math.sin(masa * 4 + fl.phase) * 0.25;
-            }
-
-            for (let fd of fountainDrops) {
-                fd.phase += dt * 3.2;
-                const t = fd.phase % 1;
-                const r = t * 2.2;
-                const y = 1.6 + Math.sin(t * Math.PI) * 1.5;
-                fd.mesh.position.set(fd.cx + Math.cos(fd.angle) * r, y, fd.cz + Math.sin(fd.angle) * r);
-            }
-
-            if (petalPoints && petalData.length > 0) {
-                const posArr = petalPoints.geometry.attributes.position.array;
-                for (let i = 0; i < petalData.length; i++) {
-                    const p = petalData[i];
-                    posArr[i * 3] = p.baseX + Math.sin(masa + p.phase) * 1.4;
-                    posArr[i * 3 + 1] -= dt * 0.65;
-                    if (posArr[i * 3 + 1] < 0.3) posArr[i * 3 + 1] = 4.6;
-                }
-                petalPoints.geometry.attributes.position.needsUpdate = true;
-            }
-
-            if (fireflyPoints && fireflyData.length > 0) {
-                fireflyPoints.material.opacity = faktorSenja * 0.9;
-                const posArr = fireflyPoints.geometry.attributes.position.array;
-                for (let i = 0; i < fireflyData.length; i++) {
-                    const f = fireflyData[i];
-                    posArr[i * 3] = f.baseX + Math.sin(masa * 1.3 + f.phase) * 1.6;
-                    posArr[i * 3 + 1] = f.baseY + Math.cos(masa * 1.7 + f.phase) * 0.6;
-                    posArr[i * 3 + 2] = f.baseZ + Math.cos(masa * 1.1 + f.phase) * 1.6;
-                }
-                fireflyPoints.geometry.attributes.position.needsUpdate = true;
-            }
-
-            for (let d of dustPool) {
-                if (d.life > 0) {
-                    d.life -= dt * 1.8;
-                    d.mesh.position.y += dt * 0.7;
-                    d.mesh.scale.setScalar(Math.max(0.01, d.life));
-                    if (d.life <= 0) d.mesh.visible = false;
-                }
-            }
-            for (let i = confettiList3D.length - 1; i >= 0; i--) {
-                const c = confettiList3D[i];
-                c.life -= dt * 0.75;
-                c.vy -= dt * 0.45;
-                c.mesh.position.x += c.vx;
-                c.mesh.position.y += c.vy;
-                c.mesh.position.z += c.vz;
-                c.mesh.rotation.x += 0.12;
-                c.mesh.rotation.y += 0.15;
-                if (c.life <= 0 || c.mesh.position.y < 0.1) {
-                    worldGroup.remove(c.mesh);
-                    confettiList3D.splice(i, 1);
-                }
-            }
-
-            const sasaranSenja = modSuasana === 'senja' ? 1 : 0;
-            faktorSenja += (sasaranSenja - faktorSenja) * Math.min(1, dt * 2.2);
-
-            if (scene && sunLight && hemiLight) {
-                const skySiang = new THREE.Color(0x7dd3fc);
-                const skySenja = new THREE.Color(0x1e1b4b);
-                const skyCampur = skySiang.clone().lerp(skySenja, faktorSenja);
-                scene.background.copy(skyCampur);
-                scene.fog.color.copy(skyCampur);
-                scene.fog.density = 0.0020 + faktorSenja * 0.0026;
-
-                sunLight.intensity = 0.88 - faktorSenja * 0.56;
-                const sunSiang = new THREE.Color(0xfffbeb);
-                const sunSenja = new THREE.Color(0xf97316);
-                sunLight.color.copy(sunSiang).lerp(sunSenja, faktorSenja);
-
-                hemiLight.intensity = 0.48 - faktorSenja * 0.22;
-
-                if (buildingWindowsMat) {
-                    buildingWindowsMat.emissiveIntensity = faktorSenja * 0.85;
-                }
-                for (let bMat of streetLampBulbs) {
-                    bMat.emissiveIntensity = faktorSenja * 1.4;
-                }
-                for (let pLight of streetPointLights) {
-                    pLight.intensity = faktorSenja * 1.35;
-                }
-            }
-
-            if (treasureChest3D && treasureChest3D.visible) {
-                treasureChest3D.rotation.y += dt * 1.2;
-                treasureChest3D.position.y = Math.sin(masa * 3.5) * 0.14;
-            }
-
-            if (screenShake > 0) screenShake--;
-
-            if (!gameStarted || isPaused || isQuizActive || isMessageActive || isAnimasiPeti) {
-                isMoving = false;
-                return;
-            }
-
-            // Pemasa Logik Permainan
-            masaBermain += dt;
-            const currentSec = Math.floor(masaBermain);
-            if (currentSec !== lastTimerSec) {
-                lastTimerSec = currentSec;
-                const min = Math.floor(currentSec / 60);
-                const sec = currentSec % 60;
-                document.getElementById('hud-timer').textContent = `⏱️ ${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
-            }
-
+        function kemaskiniSuasanaDunia(dt) {
             pemasaSuasana -= dt;
             if (pemasaSuasana <= 0) {
-                mainBunyi('suasana');
-                modSuasana = modSuasana === 'siang' ? 'senja' : 'siang';
                 pemasaSuasana = TEMPOH_SUASANA;
+                modSuasana = modSuasana === 'siang' ? 'senja' : 'siang';
+                mainBunyi('suasana');
                 paparToast(
                     modSuasana === 'senja'
-                        ? '🌅 Waktu Senja tiba! Lampu sekolah & kelip-kelip menyala.'
-                        : '☀️ Waktu Siang tiba! Kawasan sekolah kembali cerah berseri.'
+                        ? '🌇 Suasana Bertukar: Waktu Senja (Lampu Jalan & Kelip-kelip Menyala)'
+                        : '☀️ Suasana Bertukar: Waktu Siang Cerah'
                 );
             }
 
-            if (player.invulnerable > 0) player.invulnerable--;
+            const sasaranSenja = modSuasana === 'senja' ? 1.0 : 0.0;
+            faktorSenja += (sasaranSenja - faktorSenja) * Math.min(1, dt * 1.2);
 
-            isMoving = false;
-            
-            // Logik Joystick mengambil alih jika aktif
+            if (scene) {
+                const cSiang = new THREE.Color(0x7dd3fc);
+                const cSenja = new THREE.Color(0x311042);
+                const cLangit = cSiang.clone().lerp(cSenja, faktorSenja);
+                scene.background.copy(cLangit);
+                if (scene.fog) scene.fog.color.copy(cLangit);
+            }
+
+            if (hemiLight) {
+                const hSiang = new THREE.Color(0xf8fafc);
+                const hSenja = new THREE.Color(0xfb7185);
+                hemiLight.color.copy(hSiang.clone().lerp(hSenja, faktorSenja));
+                hemiLight.intensity = 0.52 - faktorSenja * 0.16;
+            }
+
+            if (sunLight) {
+                const sSiang = new THREE.Color(0xfffbeb);
+                const sSenja = new THREE.Color(0xf97316);
+                sunLight.color.copy(sSiang.clone().lerp(sSenja, faktorSenja));
+                sunLight.intensity = 0.92 - faktorSenja * 0.44;
+                sunLight.position.set(
+                    to3DX(player.x) + 68 - faktorSenja * 30,
+                    72 - faktorSenja * 42,
+                    to3DZ(player.y) + 54
+                );
+                sunLight.target.position.set(to3DX(player.x), 0, to3DZ(player.y));
+            }
+
+            if (buildingWindowsMat) {
+                buildingWindowsMat.emissiveIntensity = faktorSenja * 1.1;
+            }
+            for (let m of streetLampBulbs) {
+                m.emissiveIntensity = faktorSenja * 1.4;
+            }
+            for (let pl of streetPointLights) {
+                pl.intensity = faktorSenja * 1.6;
+            }
+            if (fireflyPoints && fireflyPoints.material) {
+                fireflyPoints.material.opacity = Math.max(0, (faktorSenja - 0.35) * 1.45);
+            }
+            if (petalPoints && petalPoints.material) {
+                petalPoints.material.opacity = Math.max(0.15, 0.85 - faktorSenja * 0.6);
+            }
+        }
+
+        function kemaskiniPermainan(dt) {
+            if (!gameStarted || isPaused || isQuizActive || isMessageActive || isAnimasiPeti) return;
+
+            const scaleDt = dt * 60;
+
+            masaBermain += dt;
+            const totalSec = Math.floor(masaBermain);
+            if (totalSec !== lastTimerSec) {
+                lastTimerSec = totalSec;
+                const min = Math.floor(totalSec / 60).toString().padStart(2, '0');
+                const sec = (totalSec % 60).toString().padStart(2, '0');
+                document.getElementById('hud-timer').textContent = `⏱️ ${min}:${sec}`;
+            }
+
+            kemaskiniSuasanaDunia(dt);
+
+            if (player.invulnerable > 0) player.invulnerable -= scaleDt;
+
+            let moveX = 0;
+            let moveY = 0;
+            let boostLari = keys['shift'] || false;
+
+            if (keys['w'] || keys['arrowup']) moveY -= 1;
+            if (keys['s'] || keys['arrowdown']) moveY += 1;
+            if (keys['a'] || keys['arrowleft']) moveX -= 1;
+            if (keys['d'] || keys['arrowright']) moveX += 1;
+
             if (joystickData.active) {
+                moveX = joystickData.vecX;
+                moveY = joystickData.vecY;
+                if (Math.hypot(moveX, moveY) > 0.78) boostLari = true;
+            }
+
+            if (moveX !== 0 || moveY !== 0) {
                 player.targetX = null;
                 player.targetY = null;
                 player.targetRun = false;
                 if (targetRing3D) targetRing3D.visible = false;
-                
-                const mag = Math.hypot(joystickData.vecX, joystickData.vecY);
-                if (mag > 0.12) { // Deadzone (Toleransi sentuhan)
-                    isRunning = mag > 0.65;
-                    const lajuSemasa = isRunning ? player.runSpeed : player.walkSpeed;
-                    
-                    if (cameraMode === 'chase') {
-                        // Kawalan Mod FPV / Belakang Watak bersepadu dengan Touch Slide:
-                        // Arah hadapan (forward) sentiasa mengikut sudut pandangan semasa (player.angle) yang dipusing melalui slide skrin.
-                        // Joystick Atas/Bawah = Maju / Undur mengikut arah pandangan semasa
-                        // Joystick Kiri/Kanan = Gerak sisi (Strafe) kiri / kanan mengikut arah pandangan semasa
-                        const forwardInput = -joystickData.vecY; // +1 ke hadapan, -1 ke belakang
-                        const strafeInput = joystickData.vecX;   // +1 ke kanan, -1 ke kiri
 
-                        const fwdX = Math.cos(player.angle);
-                        const fwdY = Math.sin(player.angle);
-                        const rightX = -Math.sin(player.angle);
-                        const rightY = Math.cos(player.angle);
-
-                        const moveX = fwdX * forwardInput + rightX * strafeInput;
-                        const moveY = fwdY * forwardInput + rightY * strafeInput;
-                        const moveLen = Math.hypot(moveX, moveY);
-
-                        if (moveLen > 0.01) {
-                            const keamatan = Math.min(1, mag);
-                            const dx = (moveX / moveLen) * lajuSemasa * keamatan;
-                            const dy = (moveY / moveLen) * lajuSemasa * keamatan;
-                            
-                            let bergerak = false;
-                            if (!semakPelanggaran(player.x + dx, player.y, player.radius)) {
-                                player.x += dx;
-                                bergerak = true;
-                            }
-                            if (!semakPelanggaran(player.x, player.y + dy, player.radius)) {
-                                player.y += dy;
-                                bergerak = true;
-                            }
-                            
-                            if (bergerak) {
-                                isMoving = true;
-                                player.stepAnim += isRunning ? 0.18 : 0.11;
-
-                                const currentPhase = Math.sin(player.stepAnim);
-                                if ((player.lastStepPhase <= 0 && currentPhase > 0) || (player.lastStepPhase >= 0 && currentPhase < 0)) {
-                                    mainBunyi('langkah');
-                                }
-                                player.lastStepPhase = currentPhase;
-
-                                if (Math.random() < (isRunning ? 0.35 : 0.16)) {
-                                    const d = dustPool[dustIndex];
-                                    d.mesh.position.set(to3DX(player.x), 0.18, to3DZ(player.y));
-                                    d.life = 1.0;
-                                    d.mesh.visible = true;
-                                    d.mesh.scale.setScalar(1);
-                                    dustIndex = (dustIndex + 1) % dustPool.length;
-                                }
-                            }
-                        }
-                    } else {
-                        // Kawalan mod pandangan atas (Isometric)
-                        const camFwdX = -Math.sin(cameraYaw);
-                        const camFwdY = -Math.cos(cameraYaw);
-                        const camRightX = -camFwdY;
-                        const camRightY = camFwdX;
-                        
-                        const rotX = joystickData.vecX * camRightX + (-joystickData.vecY) * camFwdX;
-                        const rotY = joystickData.vecX * camRightY + (-joystickData.vecY) * camFwdY;
-                        
-                        const dirLen = Math.hypot(rotX, rotY);
-                        const dx = (rotX / dirLen) * lajuSemasa;
-                        const dy = (rotY / dirLen) * lajuSemasa;
-                        
-                        player.angle = Math.atan2(dy, dx);
-                        let bergerak = false;
-
-                        if (!semakPelanggaran(player.x + dx, player.y, player.radius)) {
-                            player.x += dx;
-                            bergerak = true;
-                        }
-                        if (!semakPelanggaran(player.x, player.y + dy, player.radius)) {
-                            player.y += dy;
-                            bergerak = true;
-                        }
-                        
-                        if (bergerak) {
-                            isMoving = true;
-                            player.stepAnim += isRunning ? 0.18 : 0.11;
-
-                            const currentPhase = Math.sin(player.stepAnim);
-                            if ((player.lastStepPhase <= 0 && currentPhase > 0) || (player.lastStepPhase >= 0 && currentPhase < 0)) {
-                                mainBunyi('langkah');
-                            }
-                            player.lastStepPhase = currentPhase;
-
-                            if (Math.random() < (isRunning ? 0.35 : 0.16)) {
-                                const d = dustPool[dustIndex];
-                                d.mesh.position.set(to3DX(player.x), 0.18, to3DZ(player.y));
-                                d.life = 1.0;
-                                d.mesh.visible = true;
-                                d.mesh.scale.setScalar(1);
-                                dustIndex = (dustIndex + 1) % dustPool.length;
-                            }
-                        }
-                    }
+                const mag = Math.hypot(moveX, moveY);
+                if (mag > 1) {
+                    moveX /= mag;
+                    moveY /= mag;
                 }
-            }
-            
-            if (!joystickData.active && player.targetX !== null && player.targetY !== null) {
-                const distX = player.targetX - player.x;
-                const distY = player.targetY - player.y;
-                const jarak = Math.hypot(distX, distY);
 
-                if (jarak > 5) {
-                    isRunning = Boolean(player.targetRun);
-                    const lajuSemasa = isRunning ? player.runSpeed : player.walkSpeed;
-                    const dx = (distX / jarak) * lajuSemasa;
-                    const dy = (distY / jarak) * lajuSemasa;
+                let worldMoveX = moveX;
+                let worldMoveY = moveY;
 
-                    player.angle = Math.atan2(dy, dx);
+                if (cameraMode === 'chase') {
+                    const fwdX = -Math.sin(cameraYaw);
+                    const fwdZ = -Math.cos(cameraYaw);
+                    const rightX = Math.cos(cameraYaw);
+                    const rightZ = -Math.sin(cameraYaw);
+
+                    worldMoveX = rightX * moveX + fwdX * (-moveY);
+                    worldMoveY = rightZ * moveX + fwdZ * (-moveY);
+                }
+
+                isRunning = boostLari;
+                const laju = (isRunning ? player.runSpeed : player.walkSpeed) * scaleDt;
+                const nx = player.x + worldMoveX * laju;
+                const ny = player.y + worldMoveY * laju;
+
+                let bergerak = false;
+                if (!semakPelanggaran(nx, player.y, player.radius)) {
+                    player.x = nx;
+                    bergerak = true;
+                }
+                if (!semakPelanggaran(player.x, ny, player.radius)) {
+                    player.y = ny;
+                    bergerak = true;
+                }
+
+                player.angle = Math.atan2(worldMoveY, worldMoveX);
+                isMoving = bergerak;
+            } else if (player.targetX !== null && player.targetY !== null) {
+                const dx = player.targetX - player.x;
+                const dy = player.targetY - player.y;
+                const dist = Math.hypot(dx, dy);
+
+                if (dist > 6) {
+                    isRunning = player.targetRun;
+                    const laju = (isRunning ? player.runSpeed : player.walkSpeed) * scaleDt;
+                    const step = Math.min(laju, dist);
+                    const vx = (dx / dist) * step;
+                    const vy = (dy / dist) * step;
+
                     let bergerak = false;
-
-                    if (!semakPelanggaran(player.x + dx, player.y, player.radius)) {
-                        player.x += dx;
+                    if (!semakPelanggaran(player.x + vx, player.y, player.radius)) {
+                        player.x += vx;
                         bergerak = true;
                     }
-                    if (!semakPelanggaran(player.x, player.y + dy, player.radius)) {
-                        player.y += dy;
+                    if (!semakPelanggaran(player.x, player.y + vy, player.radius)) {
+                        player.y += vy;
                         bergerak = true;
                     }
 
-                    if (bergerak) {
-                        isMoving = true;
-                        player.stepAnim += isRunning ? 0.18 : 0.11;
-
-                        // Mainkan bunyi tapak kaki
-                        const currentPhase = Math.sin(player.stepAnim);
-                        if ((player.lastStepPhase <= 0 && currentPhase > 0) || (player.lastStepPhase >= 0 && currentPhase < 0)) {
-                            mainBunyi('langkah');
-                        }
-                        player.lastStepPhase = currentPhase;
-
-                        if (Math.random() < (isRunning ? 0.35 : 0.16)) {
-                            // PENGOPTIMUMAN PRESTASI: Guna Object Pool
-                            const d = dustPool[dustIndex];
-                            d.mesh.position.set(to3DX(player.x), 0.18, to3DZ(player.y));
-                            d.life = 1.0;
-                            d.mesh.visible = true;
-                            d.mesh.scale.setScalar(1);
-                            dustIndex = (dustIndex + 1) % dustPool.length;
-                        }
-                    } else {
+                    if (!bergerak) {
                         player.targetX = null;
                         player.targetY = null;
                         player.targetRun = false;
                         if (targetRing3D) targetRing3D.visible = false;
+                        isMoving = false;
+                    } else {
+                        player.angle = Math.atan2(dy, dx);
+                        isMoving = true;
                     }
                 } else {
                     player.targetX = null;
                     player.targetY = null;
                     player.targetRun = false;
                     if (targetRing3D) targetRing3D.visible = false;
+                    isMoving = false;
+                    isRunning = false;
                 }
+            } else {
+                isMoving = false;
+                isRunning = false;
             }
 
-            if (playerGroup3D) {
-                playerGroup3D.position.set(to3DX(player.x), 0, to3DZ(player.y));
-                playerGroup3D.rotation.y = Math.PI / 2 - player.angle;
-                playerGroup3D.visible = !(player.invulnerable > 0 && Math.floor(player.invulnerable / 5) % 2 === 0);
-
-                if (playerLimbs.legL) {
-                    const swing = isMoving ? Math.sin(player.stepAnim) * (isRunning ? 0.65 : 0.42) : 0;
-                    playerLimbs.legL.rotation.x = swing;
-                    playerLimbs.legR.rotation.x = -swing;
-                    playerLimbs.armL.rotation.x = -swing * 0.9;
-                    playerLimbs.armR.rotation.x = swing * 0.9;
-                    playerLimbs.bodyPivot.position.y = 1.38 + (isMoving ? Math.abs(Math.sin(player.stepAnim)) * 0.08 : 0);
+            if (isMoving) {
+                const kadarAnim = isRunning ? 0.34 : 0.21;
+                player.stepAnim += kadarAnim * scaleDt;
+                const phaseSekarang = Math.floor(player.stepAnim / Math.PI);
+                if (phaseSekarang !== player.lastStepPhase) {
+                    player.lastStepPhase = phaseSekarang;
+                    mainBunyi('langkah');
+                    hasilkanDebuLangkah(to3DX(player.x), to3DZ(player.y));
                 }
+            } else {
+                player.stepAnim = 0;
             }
 
-            if (camera3D && playerGroup3D) {
-                const px3 = to3DX(player.x);
-                const pz3 = to3DZ(player.y);
+            for (let z of senaraiZombie) {
+                if (z.waypoints && z.waypoints.length > 1) {
+                    if (z.waitTimer > 0) {
+                        z.waitTimer -= dt;
+                        z.vx = 0;
+                        z.vy = 0;
+                    } else {
+                        // Pemasa rawak untuk mengubah corak zig-zag atau menukar arah secara mengejut
+                        z.erraticTimer -= dt;
+                        if (z.erraticTimer <= 0) {
+                            z.erraticTimer = 1.2 + Math.random() * 2.4;
+                            z.zigDir *= -1;
+                            z.wobbleSpeed = 2.0 + Math.random() * 1.8;
+                            if (Math.random() < 0.38) {
+                                // Lompat ke titik hala lain atau berpatah balik secara mengejut
+                                z.wpIndex = (z.wpIndex + (Math.random() < 0.5 ? 1 : z.waypoints.length - 1)) % z.waypoints.length;
+                            }
+                        }
 
-                let camOffsetX = 0;
-                let camOffsetY = 34 * cameraZoom;
-                let camOffsetZ = 34 * cameraZoom;
-                let lookTargetX = px3;
-                let lookTargetY = 1.8;
-                let lookTargetZ = pz3;
+                        const targetWp = z.waypoints[z.wpIndex];
+                        const dxWp = targetWp.x - z.x;
+                        const dyWp = targetWp.y - z.y;
+                        const distWp = Math.hypot(dxWp, dyWp);
 
-                if (cameraMode === 'chase') {
-                    // Kamera mengekori tepat di belakang arah pandangan watak (player.angle)
-                    const arah3D = Math.PI / 2 - player.angle;
-                    const jarakBelakang = 13.5 * cameraZoom;
-                    camOffsetX = -Math.sin(arah3D) * jarakBelakang;
-                    camOffsetY = (8.8 + cameraPitch * 6.0) * cameraZoom;
-                    camOffsetZ = -Math.cos(arah3D) * jarakBelakang;
+                        if (distWp < 16) {
+                            z.x = targetWp.x;
+                            z.y = targetWp.y;
+                            if (Math.random() < 0.3 && z.waypoints.length > 2) {
+                                z.wpIndex = (z.wpIndex + z.waypoints.length - 1) % z.waypoints.length;
+                            } else {
+                                z.wpIndex = (z.wpIndex + 1) % z.waypoints.length;
+                            }
+                            z.waitTimer = 0.08 + Math.random() * 0.22;
+                        } else {
+                            const dirX = dxWp / distWp;
+                            const dirY = dyWp / distWp;
 
-                    // Titik pandang (lookAt) menghala ke hadapan laluan watak supaya medan penglihatan luas
-                    lookTargetX = px3 + Math.sin(arah3D) * 7.5;
-                    lookTargetY = 2.2 - cameraPitch * 3.5;
-                    lookTargetZ = pz3 + Math.cos(arah3D) * 7.5;
-                } else {
-                    const r = 34 * cameraZoom;
-                    camOffsetX = Math.sin(cameraYaw) * r;
-                    camOffsetZ = Math.cos(cameraYaw) * r;
-                }
+                            // Vektor serenjang (perpendicular) untuk gerakan Zig-Zag sisi
+                            const perpX = -dirY;
+                            const perpY = dirX;
+                            z.wobble += dt * z.wobbleSpeed * 2.8;
+                            // Gelombang segitiga (zig-zag tajam) digabung dengan ayunan rawak
+                            const zigWave = (2 / Math.PI) * Math.asin(Math.sin(z.wobble)) * z.zigDir;
+                            const kelajuanSemasa = z.speed * (0.85 + 0.35 * Math.abs(Math.cos(z.wobble * 0.7)));
 
-                const shakeX = screenShake > 0 ? (Math.random() - 0.5) * 0.8 : 0;
-                const shakeZ = screenShake > 0 ? (Math.random() - 0.5) * 0.8 : 0;
+                            const moveVecX = dirX + perpX * zigWave * z.wobbleAmp;
+                            const moveVecY = dirY + perpY * zigWave * z.wobbleAmp;
+                            const norm = Math.hypot(moveVecX, moveVecY) || 1;
 
-                camera3D.position.lerp(
-                    new THREE.Vector3(px3 + camOffsetX + shakeX, camOffsetY, pz3 + camOffsetZ + shakeZ),
-                    cameraMode === 'chase' ? 0.24 : 0.14
-                );
-                camera3D.lookAt(lookTargetX, lookTargetY, lookTargetZ);
+                            const finalDirX = moveVecX / norm;
+                            const finalDirY = moveVecY / norm;
+                            const stepZ = Math.min(kelajuanSemasa * scaleDt, distWp * 1.2);
+                            const nextZx = z.x + finalDirX * stepZ;
+                            const nextZy = z.y + finalDirY * stepZ;
 
-                if (sunLight) {
-                    sunLight.position.set(px3 + 68, 72, pz3 + 54);
-                    sunLight.target.position.set(px3, 0, pz3);
-                }
-
-                const camX = camera3D.position.x;
-                const camZ = camera3D.position.z;
-                for (let occ of buildingRoofOccluders) {
-                    let menghalang = false;
-                    for (let s = 1; s <= 6; s++) {
-                        const t = 0.15 + (s / 6) * 0.82;
-                        const sx = camX + (px3 - camX) * t;
-                        const sz = camZ + (pz3 - camZ) * t;
-                        if (sx >= occ.minX && sx <= occ.maxX && sz >= occ.minZ && sz <= occ.maxZ) {
-                            menghalang = true;
-                            break;
+                            if (!semakPelanggaran(nextZx, nextZy, z.radius)) {
+                                z.x = nextZx;
+                                z.y = nextZy;
+                                z.vx = finalDirX * kelajuanSemasa;
+                                z.vy = finalDirY * kelajuanSemasa;
+                            } else {
+                                // Jika sisi zig-zag menyentuh tepi dinding, pantulkan arah zig-zag & teruskan ke hadapan
+                                z.zigDir *= -1;
+                                const straightX = z.x + dirX * (z.speed * scaleDt);
+                                const straightY = z.y + dirY * (z.speed * scaleDt);
+                                if (!semakPelanggaran(straightX, straightY, z.radius)) {
+                                    z.x = straightX;
+                                    z.y = straightY;
+                                    z.vx = dirX * z.speed;
+                                    z.vy = dirY * z.speed;
+                                } else if (!semakPelanggaran(straightX, z.y, z.radius)) {
+                                    z.x = straightX;
+                                    z.vx = dirX * z.speed;
+                                    z.vy = 0;
+                                } else if (!semakPelanggaran(z.x, straightY, z.radius)) {
+                                    z.y = straightY;
+                                    z.vx = 0;
+                                    z.vy = dirY * z.speed;
+                                } else {
+                                    z.wpIndex = (z.wpIndex + 1) % z.waypoints.length;
+                                }
+                            }
                         }
                     }
+                }
 
-                    const sasaranOpacity = menghalang ? 0.22 : 1.0;
-                    occ.opacity += (sasaranOpacity - occ.opacity) * Math.min(1, dt * 8);
-                    for (let m of occ.meshes) {
-                        if (m.material) m.material.opacity = occ.opacity;
+                const distPlayer = Math.hypot(player.x - z.x, player.y - z.y);
+                if (distPlayer < player.radius + z.radius - 3 && player.invulnerable <= 0) {
+                    mainBunyi('zombie');
+                    nyawa--;
+                    screenShake = 16;
+                    player.invulnerable = 95;
+                    kemaskiniHUD();
+
+                    const flash = document.getElementById('damage-flash');
+                    if (flash) {
+                        flash.style.opacity = '1';
+                        setTimeout(() => { flash.style.opacity = '0'; }, 260);
                     }
-                    if (occ.windowMesh) {
-                        occ.windowMesh.visible = occ.opacity > 0.55;
+
+                    if (nyawa <= 0) {
+                        const bgMusic = document.getElementById('bg-music');
+                        if (bgMusic) bgMusic.pause();
+                        tunjukMesej(
+                            "🧟 Ditangkap Zombie!",
+                            "Nyawa anda telah habis setelah bertembung dengan zombie penjaga sekolah! Cuba lagi dengan lebih berhati-hati.",
+                            "🔄 Cuba Semula",
+                            () => {
+                                document.getElementById('message-screen').classList.add('hidden');
+                                isMessageActive = false;
+                                laksanakanQuitKeMenu();
+                            }
+                        );
+                        return;
+                    } else {
+                        player.x = titikMulaPemain.x;
+                        player.y = titikMulaPemain.y;
+                        player.targetX = null;
+                        player.targetY = null;
+                        if (targetRing3D) targetRing3D.visible = false;
+                        paparToast(`🧟 Awas! Terkena Zombie (-1 ❤️). Baki nyawa: ${nyawa}`);
                     }
                 }
             }
@@ -6021,208 +5860,359 @@
             for (let item of senaraiNyawaTerapung) {
                 if (item.collected) continue;
 
-                item.phase += dt * 3.0;
-                const nx = item.x + item.vx;
-                const ny = item.y + item.vy;
+                const nextNx = item.x + item.vx * scaleDt;
+                const nextNy = item.y + item.vy * scaleDt;
 
-                if (semakPelanggaran(nx, item.y, 16) || semakPelanggaran(item.x, ny, 16)) {
-                    const arahBaru = Math.random() * Math.PI * 2;
-                    item.vx = Math.cos(arahBaru) * item.speed;
-                    item.vy = Math.sin(arahBaru) * item.speed;
+                if (semakPelanggaran(nextNx, item.y, 16)) {
+                    item.vx = -item.vx;
                 } else {
-                    item.x = nx;
-                    item.y = ny;
-                    if (Math.random() < 0.015) {
-                        const arahBaru = Math.random() * Math.PI * 2;
-                        item.vx = Math.cos(arahBaru) * item.speed;
-                        item.vy = Math.sin(arahBaru) * item.speed;
-                    }
+                    item.x = nextNx;
                 }
 
-                item.group.position.set(to3DX(item.x), 0, to3DZ(item.y));
-                item.sprite.position.y = 2.5 + Math.sin(item.phase) * 0.35;
-                item.tapakAura.scale.setScalar(1 + Math.sin(item.phase * 1.5) * 0.14);
+                if (semakPelanggaran(item.x, nextNy, 16)) {
+                    item.vy = -item.vy;
+                } else {
+                    item.y = nextNy;
+                }
 
-                const jarakNyawa = Math.hypot(player.x - item.x, player.y - item.y);
-                if (jarakNyawa < player.radius + 20) {
+                const jarakKutip = Math.hypot(player.x - item.x, player.y - item.y);
+                if (jarakKutip < player.radius + 20) {
                     item.collected = true;
-                    item.group.visible = false;
-                    nyawa++;
+                    if (item.group) item.group.visible = false;
                     mainBunyi('nyawa');
-                    ciptaKonfeti3D(to3DX(item.x), to3DZ(item.y));
+                    nyawa = Math.min(3, nyawa + 1);
                     kemaskiniHUD();
-                    paparToast(`❤️ Tahniah! Anda mengutip +1 Nyawa Tambahan! (Jumlah: ${nyawa} ❤️)`);
+                    ciptaKonfeti3D(to3DX(item.x), to3DZ(item.y));
+                    paparToast(`❤️ Syabas! Nyawa bertambah (+1 ❤️). Baki nyawa: ${nyawa}`);
                 }
             }
 
             if (indexHarta < senaraiHarta.length) {
-                const hartaSemasa = senaraiHarta[indexHarta];
-                const jarakHarta = Math.hypot(player.x - hartaSemasa.x, player.y - hartaSemasa.y);
-                if (jarakHarta < player.radius + 22) {
-                    bukaKuiz(hartaSemasa);
-                    return;
+                const h = senaraiHarta[indexHarta];
+                const distHarta = Math.hypot(player.x - h.x, player.y - h.y);
+                if (distHarta < player.radius + 22) {
+                    bukaKuiz();
                 }
             }
-
-            for (let idxZ = 0; idxZ < zombieMeshes.length; idxZ++) {
-                const zm = zombieMeshes[idxZ];
-                const z = zm.data;
-                z.wobble += 0.09;
-
-                if (z.waitTimer > 0) {
-                    z.waitTimer -= dt;
-                    z.vx = 0;
-                    z.vy = 0;
-                } else if (z.waypoints && z.waypoints.length > 0) {
-                    const targetWp = z.waypoints[z.wpIndex];
-                    const dx = targetWp.x - z.x;
-                    const dy = targetWp.y - z.y;
-                    const jarakWp = Math.hypot(dx, dy);
-
-                    if (jarakWp < 6) {
-                        z.x = targetWp.x;
-                        z.y = targetWp.y;
-                        z.wpIndex = (z.wpIndex + 1) % z.waypoints.length;
-                        if (z.wpIndex === 0) {
-                            z.waitTimer = 1.2;
-                        }
-                    } else {
-                        let beriLaluan = false;
-                        for (let j = 0; j < senaraiZombie.length; j++) {
-                            if (idxZ === j) continue;
-                            const zLain = senaraiZombie[j];
-                            if (Math.hypot(zLain.x - z.x, zLain.y - z.y) < 75 && idxZ > j) {
-                                beriLaluan = true;
-                                break;
-                            }
-                        }
-
-                        if (!beriLaluan) {
-                            const arahSasaran = Math.atan2(dy, dx);
-                            
-                            const ayunan = Math.sin(z.wobble * z.wobbleSpeed) * z.wobbleAmp;
-                            const arahSebenar = arahSasaran + ayunan;
-
-                            z.vx = Math.cos(arahSebenar) * z.speed;
-                            z.vy = Math.sin(arahSebenar) * z.speed;
-                            const nextX = z.x + z.vx;
-                            const nextY = z.y + z.vy;
-
-                            if (!semakPelanggaran(nextX, z.y, z.radius)) z.x = nextX;
-                            if (!semakPelanggaran(z.x, nextY, z.radius)) z.y = nextY;
-                        }
-                    }
-                }
-
-                zm.mesh.position.set(to3DX(z.x), Math.abs(Math.sin(z.wobble)) * 0.14, to3DZ(z.y));
-                if (Math.hypot(z.vx, z.vy) > 0.01) {
-                    const arahZ = Math.atan2(z.vy, z.vx);
-                    zm.mesh.rotation.y = Math.PI / 2 - arahZ + Math.sin(z.wobble) * 0.15;
-                }
-
-                if (player.invulnerable <= 0) {
-                    const jarakZombie = Math.hypot(player.x - z.x, player.y - z.y);
-                    if (jarakZombie < player.radius + z.radius - 2) {
-                        mainBunyi('zombie');
-                        nyawa--;
-                        screenShake = 18;
-                        const flashEl = document.getElementById('damage-flash');
-                        flashEl.style.opacity = '1';
-                        setTimeout(() => { flashEl.style.opacity = '0'; }, 280);
-                        kemaskiniHUD();
-
-                        player.x = titikMulaPemain.x;
-                        player.y = titikMulaPemain.y;
-                        player.targetX = null;
-                        player.targetY = null;
-                        player.targetRun = false;
-                        if (targetRing3D) targetRing3D.visible = false;
-                        player.invulnerable = 120;
-
-                        if (nyawa <= 0) {
-                            const bgMusic = document.getElementById('bg-music');
-                            if (bgMusic) bgMusic.pause();
-
-                            tunjukMesej(
-                                "💀 Permainan Tamat!",
-                                `Aduh ${namaPemain} (${kelasPemain})! Anda telah ditangkap oleh zombie dan nyawa anda habis.`,
-                                "Main Semula",
-                                () => {
-                                    document.getElementById('message-screen').classList.add('hidden');
-                                    document.getElementById('start-screen').classList.remove('hidden');
-                                    gameStarted = false;
-                                }
-                            );
-                        } else {
-                            tunjukMesej(
-                                "🧟 Awas Zombie Sekolah!",
-                                `Anda terserempak dengan zombie! Nyawa ditolak 1 (Baki: ${nyawa} ❤️) dan anda telah berundur ke zon tengah sekolah.`,
-                                "Sambung Misi",
-                                () => {
-                                    document.getElementById('message-screen').classList.add('hidden');
-                                    isMessageActive = false;
-                                }
-                            );
-                        }
-                        break;
-                    }
-                }
-            }
-
-            lukisMiniMap();
         }
 
         // =========================================================================
-        // 13. GELUNG RENDER UTAMA & PELARASAN SAIZ SKRIN 9:16
+        // 12. KEMASKINI VISUAL 3D, PEMBONGKARAN BUMBUNG & MINI-MAP 2D
         // =========================================================================
-        function selarasSaizKanvas() {
+        function kemaskiniVisual3D(dt, masaNow) {
+            if (!renderer || !scene || !camera3D) return;
+            const t = masaNow * 0.001;
+
+            if (playerGroup3D) {
+                const px3 = to3DX(player.x);
+                const pz3 = to3DZ(player.y);
+                playerGroup3D.position.set(px3, 0, pz3);
+
+                const targetRot = -player.angle + Math.PI / 2;
+                let diffRot = targetRot - playerGroup3D.rotation.y;
+                while (diffRot > Math.PI) diffRot -= Math.PI * 2;
+                while (diffRot < -Math.PI) diffRot += Math.PI * 2;
+                playerGroup3D.rotation.y += diffRot * Math.min(1, dt * 14);
+
+                if (player.invulnerable > 0) {
+                    playerGroup3D.visible = Math.floor(player.invulnerable / 5) % 2 === 0;
+                } else {
+                    playerGroup3D.visible = true;
+                }
+
+                if (playerLimbs.legL && playerLimbs.legR) {
+                    if (isMoving) {
+                        const hayun = Math.sin(player.stepAnim) * (isRunning ? 0.85 : 0.55);
+                        playerLimbs.legL.rotation.x = hayun;
+                        playerLimbs.legR.rotation.x = -hayun;
+                        playerLimbs.armL.rotation.x = -hayun * 0.85;
+                        playerLimbs.armR.rotation.x = hayun * 0.85;
+                        playerLimbs.bodyPivot.position.y = 1.38 + Math.abs(Math.cos(player.stepAnim)) * 0.14;
+                    } else {
+                        playerLimbs.legL.rotation.x *= 0.8;
+                        playerLimbs.legR.rotation.x *= 0.8;
+                        playerLimbs.armL.rotation.x *= 0.8;
+                        playerLimbs.armR.rotation.x *= 0.8;
+                        playerLimbs.bodyPivot.position.y = 1.38 + Math.sin(t * 3) * 0.04;
+                    }
+                }
+            }
+
+            if (playerGroup3D && buildingRoofOccluders.length > 0) {
+                const px = playerGroup3D.position.x;
+                const pz = playerGroup3D.position.z;
+                for (let occ of buildingRoofOccluders) {
+                    const dekatBangunan = (
+                        px >= occ.minX - 2.6 && px <= occ.maxX + 2.6 &&
+                        pz >= occ.minZ - 2.6 && pz <= occ.maxZ + 6.5
+                    );
+                    const targetOpacity = dekatBangunan ? 0.18 : 1.0;
+                    occ.opacity += (targetOpacity - occ.opacity) * Math.min(1, dt * 10);
+
+                    for (let m of occ.meshes) {
+                        if (m && m.material) {
+                            m.material.opacity = occ.opacity;
+                        }
+                    }
+                    if (occ.windowMesh) {
+                        occ.windowMesh.visible = occ.opacity > 0.35;
+                    }
+                }
+            }
+
+            for (let zm of zombieMeshes) {
+                const zx3 = to3DX(zm.data.x);
+                const zz3 = to3DZ(zm.data.y);
+                zm.mesh.position.set(zx3, Math.abs(Math.sin(t * 7 + zm.data.wobble)) * 0.14, zz3);
+                if (Math.hypot(zm.data.vx, zm.data.vy) > 0.01) {
+                    zm.mesh.rotation.y = -Math.atan2(zm.data.vy, zm.data.vx) + Math.PI / 2;
+                }
+            }
+
+            for (let item of senaraiNyawaTerapung) {
+                if (item.collected || !item.group) continue;
+                const nx3 = to3DX(item.x);
+                const nz3 = to3DZ(item.y);
+                item.group.position.set(nx3, 0, nz3);
+                if (item.sprite) {
+                    item.sprite.position.y = 2.55 + Math.sin(t * 4.2 + item.phase) * 0.38;
+                }
+                if (item.tapakAura) {
+                    const skalaAura = 1 + Math.sin(t * 5 + item.phase) * 0.16;
+                    item.tapakAura.scale.set(skalaAura, skalaAura, 1);
+                }
+            }
+
+            if (treasureChest3D && treasureChest3D.visible) {
+                treasureChest3D.rotation.y = Math.sin(t * 2) * 0.25;
+                if (treasureLight3D) {
+                    treasureLight3D.intensity = 1.2 + Math.sin(t * 5) * 0.4;
+                }
+            }
+
+            if (targetRing3D && targetRing3D.visible) {
+                const s = 1 + Math.sin(t * 8) * 0.18;
+                targetRing3D.scale.set(s, s, 1);
+            }
+
+            for (let koi of koiMeshes) {
+                koi.angle += koi.speed;
+                const kx = koi.cx + Math.cos(koi.angle) * koi.rx;
+                const kz = koi.cz + Math.sin(koi.angle) * koi.rz;
+                koi.mesh.position.set(kx, 0.34, kz);
+                koi.mesh.rotation.y = -koi.angle + (koi.speed > 0 ? 0 : Math.PI);
+            }
+
+            for (let wb of windmillBlades) {
+                wb.rotation.z += dt * 1.4;
+            }
+
+            for (let fl of flagMeshes) {
+                fl.mesh.rotation.y = Math.sin(t * 4.5 + fl.phase) * 0.22;
+            }
+
+            for (let fd of fountainDrops) {
+                const prog = (t * 1.4 + fd.phase) % 1;
+                const r = prog * 2.5;
+                fd.mesh.position.set(
+                    fd.cx + Math.cos(fd.angle) * r,
+                    1.6 + Math.sin(prog * Math.PI) * 1.6,
+                    fd.cz + Math.sin(fd.angle) * r
+                );
+            }
+
+            if (petalPoints) {
+                const posArr = petalPoints.geometry.attributes.position.array;
+                for (let i = 0; i < petalData.length; i++) {
+                    const pd = petalData[i];
+                    posArr[i * 3] = pd.baseX + Math.sin(t * 1.3 + pd.phase) * 1.4;
+                    posArr[i * 3 + 1] = 1.0 + ((t * 0.7 + pd.phase) % 3.5);
+                    posArr[i * 3 + 2] = pd.baseZ + Math.cos(t * 1.1 + pd.phase) * 1.4;
+                }
+                petalPoints.geometry.attributes.position.needsUpdate = true;
+            }
+
+            if (fireflyPoints && faktorSenja > 0.2) {
+                const ffArr = fireflyPoints.geometry.attributes.position.array;
+                for (let i = 0; i < fireflyData.length; i++) {
+                    const fd = fireflyData[i];
+                    ffArr[i * 3] = fd.baseX + Math.cos(t * 1.8 + fd.phase) * 1.2;
+                    ffArr[i * 3 + 1] = fd.baseY + Math.sin(t * 2.4 + fd.phase) * 0.6;
+                    ffArr[i * 3 + 2] = fd.baseZ + Math.sin(t * 1.6 + fd.phase) * 1.2;
+                }
+                fireflyPoints.geometry.attributes.position.needsUpdate = true;
+            }
+
+            for (let d of dustPool) {
+                if (d.life > 0) {
+                    d.life -= dt * 2.6;
+                    if (d.life <= 0) {
+                        d.mesh.visible = false;
+                    } else {
+                        d.mesh.position.y += dt * 0.9;
+                        d.mesh.scale.setScalar(d.life);
+                    }
+                }
+            }
+
+            for (let i = confettiList3D.length - 1; i >= 0; i--) {
+                const c = confettiList3D[i];
+                c.mesh.position.x += c.vx;
+                c.mesh.position.y += c.vy;
+                c.mesh.position.z += c.vz;
+                c.vy -= 0.009;
+                c.mesh.rotation.x += 0.14;
+                c.mesh.rotation.y += 0.18;
+                c.life -= dt * 0.75;
+                if (c.life <= 0 || c.mesh.position.y < 0) {
+                    worldGroup.remove(c.mesh);
+                    confettiList3D.splice(i, 1);
+                }
+            }
+
+            for (let i = permataList3D.length - 1; i >= 0; i--) {
+                const p = permataList3D[i];
+                p.mesh.position.x += p.vx;
+                p.mesh.position.y += p.vy;
+                p.mesh.position.z += p.vz;
+                p.vy -= 0.008;
+                p.mesh.rotation.y += 0.16;
+                p.life -= dt * 0.7;
+                if (p.life <= 0 || p.mesh.position.y < 0.1) {
+                    worldGroup.remove(p.mesh);
+                    permataList3D.splice(i, 1);
+                }
+            }
+
+            if (playerGroup3D) {
+                const targetX = playerGroup3D.position.x;
+                const targetZ = playerGroup3D.position.z;
+
+                let shakeX = 0, shakeZ = 0;
+                if (screenShake > 0) {
+                    shakeX = (Math.random() - 0.5) * screenShake * 0.08;
+                    shakeZ = (Math.random() - 0.5) * screenShake * 0.08;
+                    screenShake *= 0.85;
+                    if (screenShake < 0.3) screenShake = 0;
+                }
+
+                if (cameraMode === 'chase') {
+                    const camDist = 11.5 * cameraZoom;
+                    const tinggiKamera = (6.4 + cameraPitch * 4.5) * cameraZoom;
+                    const desCamX = targetX + Math.sin(cameraYaw) * camDist + shakeX;
+                    const desCamY = Math.max(2.6, tinggiKamera);
+                    const desCamZ = targetZ + Math.cos(cameraYaw) * camDist + shakeZ;
+
+                    camera3D.position.x += (desCamX - camera3D.position.x) * Math.min(1, dt * 11);
+                    camera3D.position.y += (desCamY - camera3D.position.y) * Math.min(1, dt * 11);
+                    camera3D.position.z += (desCamZ - camera3D.position.z) * Math.min(1, dt * 11);
+
+                    const lookDist = 12.0;
+                    const lookX = targetX - Math.sin(cameraYaw) * lookDist;
+                    const lookY = 1.6 - cameraPitch * 4.5;
+                    const lookZ = targetZ - Math.cos(cameraYaw) * lookDist;
+                    camera3D.lookAt(lookX, lookY, lookZ);
+                } else {
+                    const dist = 36 * cameraZoom;
+                    const height = 34 * cameraZoom;
+                    const desCamX = targetX + Math.sin(cameraYaw) * dist + shakeX;
+                    const desCamZ = targetZ + Math.cos(cameraYaw) * dist + shakeZ;
+                    const desCamY = height;
+
+                    camera3D.position.x += (desCamX - camera3D.position.x) * Math.min(1, dt * 8);
+                    camera3D.position.y += (desCamY - camera3D.position.y) * Math.min(1, dt * 8);
+                    camera3D.position.z += (desCamZ - camera3D.position.z) * Math.min(1, dt * 8);
+                    camera3D.lookAt(targetX, 1.4, targetZ);
+                }
+            }
+
+            renderer.render(scene, camera3D);
+        }
+
+        function lukisMiniMap() {
+            if (!gameStarted || minimapCanvas.classList.contains('hidden')) return;
+            const mmW = 114;
+            const mmH = Math.round(mmW * (MAP_HEIGHT / MAP_WIDTH));
+            if (minimapCanvas.width !== mmW || minimapCanvas.height !== mmH) {
+                minimapCanvas.width = mmW;
+                minimapCanvas.height = mmH;
+            }
+
+            const sx = mmW / MAP_WIDTH;
+            const sy = mmH / MAP_HEIGHT;
+
+            mmCtx.fillStyle = '#1e293b';
+            mmCtx.fillRect(0, 0, mmW, mmH);
+
+            for (let d of senaraiDinding) {
+                if (d.jenis === 'pagar') mmCtx.fillStyle = '#0f172a';
+                else if (d.jenis === 'padang') mmCtx.fillStyle = '#16a34a';
+                else if (d.jenis === 'taman_sains' || d.jenis === 'taman_lestari' || d.jenis === 'pergola') mmCtx.fillStyle = '#15803d';
+                else mmCtx.fillStyle = '#64748b';
+                mmCtx.fillRect(d.x * sx, d.y * sy, Math.max(1.5, d.w * sx), Math.max(1.5, d.h * sy));
+            }
+
+            for (let z of senaraiZombie) {
+                mmCtx.fillStyle = '#ef4444';
+                mmCtx.beginPath();
+                mmCtx.arc(z.x * sx, z.y * sy, 2.3, 0, Math.PI * 2);
+                mmCtx.fill();
+            }
+
+            for (let item of senaraiNyawaTerapung) {
+                if (item.collected) continue;
+                mmCtx.fillStyle = '#fb7185';
+                mmCtx.beginPath();
+                mmCtx.arc(item.x * sx, item.y * sy, 3.0, 0, Math.PI * 2);
+                mmCtx.fill();
+            }
+
+            mmCtx.fillStyle = '#38bdf8';
+            mmCtx.beginPath();
+            mmCtx.arc(player.x * sx, player.y * sy, 3.4, 0, Math.PI * 2);
+            mmCtx.fill();
+            mmCtx.strokeStyle = '#ffffff';
+            mmCtx.lineWidth = 1;
+            mmCtx.stroke();
+        }
+
+        // =========================================================================
+        // 13. GELUNG UTAMA (MAIN LOOP) & PENGENDALI SAIZ TINGKAP
+        // =========================================================================
+        function gelungPermainan(now) {
+            const dt = Math.min(0.05, (now - lastFrameTime) / 1000);
+            lastFrameTime = now;
+
+            kemaskiniPermainan(dt);
+            kemaskiniVisual3D(dt, now);
+            lukisMiniMap();
+
+            requestAnimationFrame(gelungPermainan);
+        }
+
+        function larasSaizKanvas() {
             const container = document.getElementById('webgl-container');
-            if (!renderer || !camera3D || !container) return;
+            if (!container || !renderer || !camera3D) return;
             const w = Math.max(1, container.clientWidth);
             const h = Math.max(1, container.clientHeight);
             const aspect = w / h;
-
             camera3D.aspect = aspect;
             camera3D.fov = kiraFovResponsif(aspect);
             camera3D.updateProjectionMatrix();
-            
-            // --- PENGOPTIMUMAN PRESTASI PC (RESOLUSI PIKSEL) ---
-            const isDesktop = window.innerWidth > 800;
-            let dpr = window.devicePixelRatio || 1;
-            
-            if (isDesktop) {
-                dpr = Math.min(dpr, 1.0);
-            } else {
-                dpr = Math.min(dpr, 1.5);
-            }
-            
-            renderer.setPixelRatio(dpr);
             renderer.setSize(w, h);
         }
 
-        window.addEventListener('resize', selarasSaizKanvas);
-        window.addEventListener('orientationchange', () => setTimeout(selarasSaizKanvas, 120));
+        window.addEventListener('resize', larasSaizKanvas);
+        window.addEventListener('orientationchange', () => {
+            setTimeout(larasSaizKanvas, 150);
+        });
 
-        function animate(now) {
-            const dt = Math.min(0.1, Math.max(0.001, (now - lastFrameTime) / 1000));
-            lastFrameTime = now;
-
-            update(dt);
-            if (renderer && scene && camera3D) {
-                renderer.render(scene, camera3D);
-            }
-            requestAnimationFrame(animate);
-        }
-
-        window.onload = function () {
-            rawakkanSoalanHartaKarun();
+        window.onload = () => {
             inisialisasiThreeJS();
-            selarasSaizKanvas();
+            rawakkanSoalanHartaKarun();
             janaPetaSekolah3D();
-            setupJoystick();
-
             lastFrameTime = performance.now();
-            requestAnimationFrame(animate);
+            requestAnimationFrame(gelungPermainan);
         };
     </script>
 </body>
