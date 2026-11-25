@@ -442,7 +442,7 @@
             border-radius: 8px;
         }
 
-        /* Kad Pilihan Watak Interaktif (Murid Lelaki vs Murid Perempuan) */
+        /* Kad Pilihan Watak Interaktif (Pratonton Figura LEGO® SVG - Tiada Pilihan Awal untuk Kejutan) */
         .character-picker-label {
             display: block;
             font-weight: 800;
@@ -1535,6 +1535,7 @@
         const GOOGLE_SCRIPT_API_URL = "https://script.google.com/macros/s/AKfycbyKT1Ev1wujT7SdJK9rXwzI1iipU8C7cR6YExbk7MiLbesdxkenvBmSURXcejDihbKJ/exec";
         const ADMIN_PASSWORD_SAH = "srati2001";
         const LOCAL_LEADERBOARD_KEY = "misi2_pemburu_harta_karun_records_v1";
+        const USED_QUESTIONS_SESSION_KEY = "misi2_soalan_sudah_keluar_v1";
 
         const MAP_WIDTH = 2440;
         const MAP_HEIGHT = 1900;
@@ -4033,7 +4034,7 @@
         }
 
         // =========================================================================
-        // 7. PENJANA 10 ZOMBIE FIGURA LEGO® MERONDA SELURUH KAWASAN
+        // 7. PENJANA ZOMBIE FIGURA LEGO® (GERAKAN ZIGZAG SAHAJA & MUDAH DILEPASI)
         // =========================================================================
         function spawnZombies3D() {
             for (let zm of zombieMeshes) worldGroup.remove(zm.mesh);
@@ -4043,7 +4044,8 @@
             if (!schoolGrid) return;
 
             const { cols, rows, pusatX, pusatY, vWall, hWall, nodDitelan } = schoolGrid;
-            const jumlahZombie = 10;
+            // Kurangkan bilangan zombie (7 sahaja) supaya laluan lebih lapang dan mudah dilepasi
+            const jumlahZombie = 7;
 
             const seluarZMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.38 });
             const bajuZMat = new THREE.MeshStandardMaterial({
@@ -4066,114 +4068,85 @@
                     const ny = pusatY(r);
                     const jarakPemain = Math.hypot(nx - titikMulaPemain.x, ny - titikMulaPemain.y);
                     const jarakHartaPertama = Math.hypot(nx - senaraiHarta[0].x, ny - senaraiHarta[0].y);
-                    if (jarakPemain > 260 && jarakHartaPertama > 160 && !semakPelanggaran(nx, ny, 18)) {
+                    if (jarakPemain > 280 && jarakHartaPertama > 190 && !semakPelanggaran(nx, ny, 18)) {
                         nodSah.push({ c, r, x: nx, y: ny });
                     }
                 }
             }
 
-            const titikSasaranSektor = [
-                { x: 0.08 * MAP_WIDTH, y: 0.12 * MAP_HEIGHT },
-                { x: 0.35 * MAP_WIDTH, y: 0.12 * MAP_HEIGHT },
-                { x: 0.65 * MAP_WIDTH, y: 0.12 * MAP_HEIGHT },
-                { x: 0.92 * MAP_WIDTH, y: 0.15 * MAP_HEIGHT },
-                { x: 0.08 * MAP_WIDTH, y: 0.50 * MAP_HEIGHT },
-                { x: 0.92 * MAP_WIDTH, y: 0.48 * MAP_HEIGHT },
-                { x: 0.08 * MAP_WIDTH, y: 0.88 * MAP_HEIGHT },
-                { x: 0.35 * MAP_WIDTH, y: 0.88 * MAP_HEIGHT },
-                { x: 0.65 * MAP_WIDTH, y: 0.88 * MAP_HEIGHT },
-                { x: 0.92 * MAP_WIDTH, y: 0.88 * MAP_HEIGHT }
-            ];
+            // Penempatan rawak tulen dengan jarak pemisah besar supaya zombie tidak saling berdekatan
+            let nodAsalDipilih = [];
+            let jarakTerdekatTerbaik = -1;
+            const hadJarakCuba = [580, 520, 460, 400];
 
-            const nodAsalDipilih = [];
-            for (let sasaran of titikSasaranSektor) {
-                if (nodAsalDipilih.length >= jumlahZombie) break;
-                let calonTerbaik = null;
-                let skorTerbaik = Infinity;
+            for (const hadMinJarak of hadJarakCuba) {
+                for (let percubaan = 0; percubaan < 30; percubaan++) {
+                    const calonRawak = acakTatasusunanFisherYates(nodSah);
+                    const pilihanSementara = [];
 
-                for (let nod of nodSah) {
-                    const sudahDipilih = nodAsalDipilih.some(p => p.c === nod.c && p.r === nod.r);
-                    if (sudahDipilih) continue;
+                    for (const nod of calonRawak) {
+                        if (pilihanSementara.length >= jumlahZombie) break;
+                        const jauhDariSemua = pilihanSementara.every(
+                            p => Math.hypot(p.x - nod.x, p.y - nod.y) >= hadMinJarak
+                        );
+                        if (jauhDariSemua) {
+                            pilihanSementara.push(nod);
+                        }
+                    }
 
-                    const terlaluDekat = nodAsalDipilih.some(p => Math.hypot(p.x - nod.x, p.y - nod.y) < 280);
-                    if (terlaluDekat) continue;
+                    if (pilihanSementara.length > nodAsalDipilih.length) {
+                        nodAsalDipilih = pilihanSementara;
+                    }
 
-                    const jarakSektor = Math.hypot(nod.x - sasaran.x, nod.y - sasaran.y);
-                    if (jarakSektor < skorTerbaik) {
-                        skorTerbaik = jarakSektor;
-                        calonTerbaik = nod;
+                    if (pilihanSementara.length >= jumlahZombie) {
+                        let minPasangan = Infinity;
+                        for (let i = 0; i < pilihanSementara.length; i++) {
+                            for (let j = i + 1; j < pilihanSementara.length; j++) {
+                                const d = Math.hypot(
+                                    pilihanSementara[i].x - pilihanSementara[j].x,
+                                    pilihanSementara[i].y - pilihanSementara[j].y
+                                );
+                                if (d < minPasangan) minPasangan = d;
+                            }
+                        }
+                        if (minPasangan > jarakTerdekatTerbaik) {
+                            jarakTerdekatTerbaik = minPasangan;
+                            nodAsalDipilih = pilihanSementara;
+                        }
                     }
                 }
-
-                if (calonTerbaik) {
-                    nodAsalDipilih.push(calonTerbaik);
-                }
+                if (nodAsalDipilih.length >= jumlahZombie) break;
             }
 
-            const dapatkanJiranTerbuka = (c, r) => {
-                const jiran = [];
-                if (c > 0 && !vWall[r][c - 1]) jiran.push({ c: c - 1, r });
-                if (c < cols - 1 && !vWall[r][c]) jiran.push({ c: c + 1, r });
-                if (r > 0 && !hWall[r - 1][c]) jiran.push({ c, r: r - 1 });
-                if (r < rows - 1 && !hWall[r][c]) jiran.push({ c, r: r + 1 });
-                return jiran;
-            };
-
             nodAsalDipilih.forEach((asal, idx) => {
-                const laluanPergi = [{ c: asal.c, r: asal.r, x: asal.x, y: asal.y }];
-                let semasa = { c: asal.c, r: asal.r };
-                const panjangRondaan = 3 + (idx % 2);
+                // Tentukan paksi laluan terbuka supaya zombie bergerak zigzag setempat dengan ruang tepi yang luas
+                const bukaMendatar = (asal.c > 0 && !vWall[asal.r][asal.c - 1]) || (asal.c < cols - 1 && !vWall[asal.r][asal.c]);
+                const bukaMenegak = (asal.r > 0 && !hWall[asal.r - 1][asal.c]) || (asal.r < rows - 1 && !hWall[asal.r][asal.c]);
 
-                for (let langkah = 0; langkah < panjangRondaan; langkah++) {
-                    const calonJiran = dapatkanJiranTerbuka(semasa.c, semasa.r).filter(j => {
-                        const telahDilawati = laluanPergi.some(p => p.c === j.c && p.r === j.r);
-                        const jx = pusatX(j.c);
-                        const jy = pusatY(j.r);
-                        const terlaluDekatMula = Math.hypot(jx - titikMulaPemain.x, jy - titikMulaPemain.y) < 170;
-                        return !telahDilawati && !terlaluDekatMula;
-                    });
-
-                    if (calonJiran.length === 0) break;
-
-                    calonJiran.sort((a, b) => {
-                        const ax = pusatX(a.c), ay = pusatY(a.r);
-                        const bx = pusatX(b.c), by = pusatY(b.r);
-                        const minDistA = Math.min(...nodAsalDipilih.map((p, i) => i === idx ? 9999 : Math.hypot(ax - p.x, ay - p.y)));
-                        const minDistB = Math.min(...nodAsalDipilih.map((p, i) => i === idx ? 9999 : Math.hypot(bx - p.x, by - p.y)));
-                        return minDistB - minDistA + (Math.random() - 0.5) * 80;
-                    });
-
-                    const pilih = calonJiran[0];
-                    laluanPergi.push({
-                        c: pilih.c,
-                        r: pilih.r,
-                        x: pusatX(pilih.c),
-                        y: pusatY(pilih.r)
-                    });
-                    semasa = pilih;
+                let zigAxisAngle = 0;
+                if (bukaMendatar && !bukaMenegak) {
+                    zigAxisAngle = 0;
+                } else if (bukaMenegak && !bukaMendatar) {
+                    zigAxisAngle = Math.PI / 2;
+                } else {
+                    zigAxisAngle = idx % 2 === 0 ? 0 : Math.PI / 2;
                 }
 
-                const laluanBalik = laluanPergi.slice(1, -1).reverse();
-                const waypoints = [...laluanPergi, ...laluanBalik];
-
-                const laju = 0.78 + (idx % 3) * 0.08;
                 const zData = {
                     x: asal.x,
                     y: asal.y,
                     homeX: asal.x,
                     homeY: asal.y,
-                    waypoints,
-                    wpIndex: waypoints.length > 1 ? 1 : 0,
-                    waitTimer: (idx % 3) * 0.25,
-                    radius: 15,
-                    speed: laju,
+                    radius: 11,
                     vx: 0,
                     vy: 0,
                     wobble: Math.random() * Math.PI * 2,
-                    wobbleSpeed: 2.2 + Math.random() * 1.4,
-                    wobbleAmp: 1.4 + Math.random() * 0.8,
-                    zigDir: idx % 2 === 0 ? 1 : -1,
-                    erraticTimer: 1.5 + Math.random() * 2.5
+                    zigAxisAngle,
+                    zigPhase: Math.random() * Math.PI * 2,
+                    zigSpeed: 0.85 + (idx % 3) * 0.12,
+                    zigLonAmp: 30,
+                    zigLatAmp: 24,
+                    zigDir: idx % 2 === 0 ? 1 : -1
                 };
                 senaraiZombie.push(zData);
 
@@ -4387,7 +4360,7 @@
             }
         }
 
-        // Bank Soalan Tatabahasa Bahasa Melayu Tahun 3 & Pembayang Pantun Lokasi Sekolah
+        // Bank Soalan Penuh 25 Soalan Tatabahasa Bahasa Melayu Tahun 3 (bm1 - bm25)
         const SKEMA_JAWAPAN_BM = {
             bm1: {
                 tajuk: "Kata Nama Khas",
@@ -4407,7 +4380,7 @@
             bm4: {
                 tajuk: "Penjodoh Bilangan",
                 jawapanIndex: 3,
-                ulasan: "Sebilah digunakan untuk benda tajam seperti pisau dan gunting."
+                ulasan: "Sebilah digunakan untuk benda tajam seperti parang dan pisau."
             },
             bm5: {
                 tajuk: "Kata Sendi Nama",
@@ -4428,6 +4401,91 @@
                 tajuk: "Simpulan Bahasa",
                 jawapanIndex: 1,
                 ulasan: "Ringan tulang bermaksud rajin bekerja dan membantu."
+            },
+            bm9: {
+                tajuk: "Kata Hubung",
+                jawapanIndex: 0,
+                ulasan: "Kerana digunakan untuk menerangkan sebab atau punca sesuatu kejadian."
+            },
+            bm10: {
+                tajuk: "Kata Seru",
+                jawapanIndex: 1,
+                ulasan: "Wah digunakan untuk menyatakan perasaan kagum atau hairan."
+            },
+            bm11: {
+                tajuk: "Kata Tanya",
+                jawapanIndex: 2,
+                ulasan: "Siapakah digunakan untuk menanyakan nama orang atau manusia."
+            },
+            bm12: {
+                tajuk: "Kata Perintah",
+                jawapanIndex: 2,
+                ulasan: "Jangan digunakan untuk melarang seseorang daripada melakukan sesuatu."
+            },
+            bm13: {
+                tajuk: "Kata Ganda Penuh",
+                jawapanIndex: 1,
+                ulasan: "Rama-rama ialah serangga bersayap cantik yang terbang di taman bunga."
+            },
+            bm14: {
+                tajuk: "Kata Majmuk",
+                jawapanIndex: 1,
+                ulasan: "Pintu pagar merujuk kepada laluan masuk utama ke kawasan sekolah."
+            },
+            bm15: {
+                tajuk: "Imbuhan Akhiran",
+                jawapanIndex: 0,
+                ulasan: "Minuman ialah kata nama terbitan bagi benda yang diminum."
+            },
+            bm16: {
+                tajuk: "Kata Penguat",
+                jawapanIndex: 0,
+                ulasan: "Amat berfungsi menguatkan maksud kata adjektif 'indah'."
+            },
+            bm17: {
+                tajuk: "Penjodoh Bilangan",
+                jawapanIndex: 2,
+                ulasan: "Sesikat digunakan untuk buah pisang yang masih melekat pada pangkalnya."
+            },
+            bm18: {
+                tajuk: "Kata Sendi Nama",
+                jawapanIndex: 1,
+                ulasan: "Oleh digunakan selepas kata kerja pasif ('dihadiahkan') untuk menunjukkan pelaku."
+            },
+            bm19: {
+                tajuk: "Kata Kerja Tak Transitif",
+                jawapanIndex: 1,
+                ulasan: "Tidur ialah kata kerja tak transitif yang tidak memerlukan objek."
+            },
+            bm20: {
+                tajuk: "Kata Nama Am",
+                jawapanIndex: 0,
+                ulasan: "Sekolah ialah kata nama am dan ditulis dengan huruf kecil di tengah ayat."
+            },
+            bm21: {
+                tajuk: "Kata Adjektif Ukuran",
+                jawapanIndex: 0,
+                ulasan: "Panjang menerangkan ukuran jarak dari hujung ke hujung sesuatu benda."
+            },
+            bm22: {
+                tajuk: "Kata Ganti Nama Diri Pertama",
+                jawapanIndex: 1,
+                ulasan: "Kami merujuk kepada diri penutur bersama rakan-rakannya tanpa menyertakan pendengar."
+            },
+            bm23: {
+                tajuk: "Sinonim (Kata Seerti)",
+                jawapanIndex: 1,
+                ulasan: "Riang mempunyai maksud yang sama dengan gembira atau suka cita."
+            },
+            bm24: {
+                tajuk: "Antonim (Kata Berlawan)",
+                jawapanIndex: 1,
+                ulasan: "Malas ialah kata berlawan bagi rajin."
+            },
+            bm25: {
+                tajuk: "Simpulan Bahasa",
+                jawapanIndex: 0,
+                ulasan: "Ulat buku bermaksud orang yang sangat rajin membaca buku."
             }
         };
 
@@ -4544,19 +4602,192 @@
                 soalan: "Kakak seorang yang ____ kerana selalu membantu ibu di dapur.",
                 pilihan: ["mulut murai", "ringan tulang", "besar kepala", "anak emas"],
                 jawapan: 1
+            },
+            {
+                soalanId: "bm9",
+                soalan: "Adam tidak hadir ke sekolah hari ini ____ dia demam panas.",
+                pilihan: ["kerana", "tetapi", "sambil", "atau"],
+                jawapan: 0
+            },
+            {
+                soalanId: "bm10",
+                soalan: "____, cantiknya lukisan pemandangan sawah padi ini!",
+                pilihan: ["Aduh", "Wah", "Cis", "Nah"],
+                jawapan: 1
+            },
+            {
+                soalanId: "bm11",
+                soalan: "____ kah nama guru kelas Tahun 3 Imtiyaz?",
+                pilihan: ["Bilakah", "Di manakah", "Siapakah", "Berapakah"],
+                jawapan: 2
+            },
+            {
+                soalanId: "bm12",
+                soalan: "____ pijak rumput di kawasan taman sains itu.",
+                pilihan: ["Sila", "Jemput", "Jangan", "Minta"],
+                jawapan: 2
+            },
+            {
+                soalanId: "bm13",
+                soalan: "Banyak ____ berwarna-warni berterbangan di taman bunga sekolah.",
+                pilihan: ["kura-kura", "rama-rama", "labah-labah", "layang-layang"],
+                jawapan: 1
+            },
+            {
+                soalanId: "bm14",
+                soalan: "Murid-murid beratur dengan tertib di hadapan ____ sebelum masuk ke kelas.",
+                pilihan: ["papan tulis", "pintu pagar", "meja makan", "jam tangan"],
+                jawapan: 1
+            },
+            {
+                soalanId: "bm15",
+                soalan: "Ibu menghidangkan ____ panas kepada tetamu yang datang ke rumah.",
+                pilihan: ["minuman", "peminum", "diminum", "terminum"],
+                jawapan: 0
+            },
+            {
+                soalanId: "bm16",
+                soalan: "Pemandangan di puncak bukit itu ____ indah.",
+                pilihan: ["amat", "sudah", "pernah", "sedang"],
+                jawapan: 0
+            },
+            {
+                soalanId: "bm17",
+                soalan: "Ayah membeli dua ____ pisang emas di pasar tani.",
+                pilihan: ["batang", "keping", "sikat", "helai"],
+                jawapan: 2
+            },
+            {
+                soalanId: "bm18",
+                soalan: "Basikal baharu itu dihadiahkan ____ ayah sempena hari lahir Danish.",
+                pilihan: ["pada", "oleh", "kepada", "untuk"],
+                jawapan: 1
+            },
+            {
+                soalanId: "bm19",
+                soalan: "Adik sedang ____ lena di atas katilnya.",
+                pilihan: ["berlari", "tidur", "melompat", "menyanyi"],
+                jawapan: 1
+            },
+            {
+                soalanId: "bm20",
+                soalan: "Perkataan manakah yang merupakan Kata Nama Am?",
+                pilihan: ["sekolah", "Perak", "Cikgu Aisyah", "Proton Saga"],
+                jawapan: 0
+            },
+            {
+                soalanId: "bm21",
+                soalan: "Pembaris kayu itu lebih ____ daripada pensel saya.",
+                pilihan: ["panjang", "bulat", "manis", "laju"],
+                jawapan: 0
+            },
+            {
+                soalanId: "bm22",
+                soalan: "'____ berjanji akan menjaga kebersihan kelas ini,' kata murid-murid Tahun 3.",
+                pilihan: ["Saya", "Kami", "Mereka", "Kalian"],
+                jawapan: 1
+            },
+            {
+                soalanId: "bm23",
+                soalan: "Perkataan yang sama erti dengan 'gembira' ialah...",
+                pilihan: ["sedih", "riang", "marah", "takut"],
+                jawapan: 1
+            },
+            {
+                soalanId: "bm24",
+                soalan: "Perkataan berlawan bagi 'rajin' ialah...",
+                pilihan: ["tekun", "malas", "pandai", "cepat"],
+                jawapan: 1
+            },
+            {
+                soalanId: "bm25",
+                soalan: "Hafiz digelar ____ kerana dia suka membaca buku di mana-mana sahaja.",
+                pilihan: ["ulat buku", "kaki bangku", "buah hati", "tangan terbuka"],
+                jawapan: 0
             }
         ];
 
         let senaraiHarta = [];
+        let memoriSoalanTerpakai = [];
+
+        // Pengacakan rawak tulen (Fisher-Yates Shuffle)
+        function acakTatasusunanFisherYates(arr) {
+            const hasil = [...arr];
+            for (let i = hasil.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [hasil[i], hasil[j]] = [hasil[j], hasil[i]];
+            }
+            return hasil;
+        }
+
+        function bacaRekodSoalanTerpakai() {
+            try {
+                const raw = sessionStorage.getItem(USED_QUESTIONS_SESSION_KEY);
+                const parsed = raw ? JSON.parse(raw) : [];
+                if (Array.isArray(parsed)) {
+                    memoriSoalanTerpakai = parsed;
+                    return parsed;
+                }
+            } catch (e) {
+                // Guna memori sementara jika sessionStorage disekat
+            }
+            return memoriSoalanTerpakai;
+        }
+
+        function simpanRekodSoalanTerpakai(senaraiId) {
+            memoriSoalanTerpakai = [...senaraiId];
+            try {
+                sessionStorage.setItem(USED_QUESTIONS_SESSION_KEY, JSON.stringify(memoriSoalanTerpakai));
+            } catch (e) {
+                // Abaikan jika sessionStorage disekat
+            }
+        }
 
         function rawakkanSoalanHartaKarun() {
-            const salinan = [...BANK_SOALAN_HARTA].sort(() => Math.random() - 0.5).slice(0, 5);
-            const lokasiRawak = [...LOKASI_PANTUN_SEKOLAH].sort(() => Math.random() - 0.5);
+            const jumlahPeti = 5;
+            let sudahKeluar = bacaRekodSoalanTerpakai();
 
-            senaraiHarta = salinan.map((item, idx) => {
+            // Tapis soalan daripada 25 bank soalan yang BELUM keluar dalam sesi-sesi sebelum ini
+            let calonBaharu = BANK_SOALAN_HARTA.filter(s => !sudahKeluar.includes(s.soalanId));
+
+            // Jika baki soalan belum keluar kurang daripada 5, tetapkan semula kitaran 25 soalan
+            // sambil mengelakkan 5 soalan terakhir daripada pusingan sebelumnya berulang serta-merta
+            if (calonBaharu.length < jumlahPeti) {
+                const limaTerakhir = sudahKeluar.slice(-jumlahPeti);
+                const bakiSediaAda = acakTatasusunanFisherYates(calonBaharu);
+                const tambahanSegar = acakTatasusunanFisherYates(
+                    BANK_SOALAN_HARTA.filter(
+                        s => !bakiSediaAda.some(b => b.soalanId === s.soalanId) && !limaTerakhir.includes(s.soalanId)
+                    )
+                );
+                calonBaharu = [...bakiSediaAda, ...tambahanSegar];
+                sudahKeluar = [];
+            }
+
+            const limaSoalanDipilih = acakTatasusunanFisherYates(calonBaharu).slice(0, jumlahPeti);
+
+            // Rekodkan ID 5 soalan yang dipilih supaya tidak berulang apabila pemain keluar & masuk semula
+            const rekodBaharu = [...sudahKeluar, ...limaSoalanDipilih.map(s => s.soalanId)];
+            simpanRekodSoalanTerpakai(rekodBaharu);
+
+            const lokasiRawak = acakTatasusunanFisherYates(LOKASI_PANTUN_SEKOLAH);
+
+            senaraiHarta = limaSoalanDipilih.map((item, idx) => {
                 const lok = lokasiRawak[idx % lokasiRawak.length];
+                const skema = SKEMA_JAWAPAN_BM[item.soalanId];
+                const jawapanAsal = skema ? skema.jawapanIndex : item.jawapan;
+
+                // Acak juga kedudukan pilihan jawapan (A, B, C, D) supaya murid membaca pilihan dengan teliti
+                const pasanganPilihan = item.pilihan.map((teks, pIdx) => ({
+                    teks,
+                    betul: pIdx === jawapanAsal
+                }));
+                const pilihanDiacak = acakTatasusunanFisherYates(pasanganPilihan);
+
                 return {
                     ...item,
+                    pilihan: pilihanDiacak.map(p => p.teks),
+                    jawapan: pilihanDiacak.findIndex(p => p.betul),
                     lokasiNama: lok.lokasiNama,
                     pantun: lok.pantun,
                     pilihNod: lok.pilihNod,
@@ -5313,7 +5544,7 @@
 
             const h = senaraiHarta[indexHarta];
             const skema = SKEMA_JAWAPAN_BM[h.soalanId];
-            const jawapanSah = skema ? skema.jawapanIndex : h.jawapan;
+            const jawapanSah = h.jawapan;
 
             if (!masaTamat && pilihanIdx === jawapanSah) {
                 jumlahDiamond += 10;
@@ -5834,70 +6065,38 @@
                 }
             }
 
+            // Gelombang segi tiga untuk gerakan zigzag tulen setempat sahaja (mudah dijangka & dilepasi)
+            const gelombangZig = (p) => (2 / Math.PI) * Math.asin(Math.sin(p));
+
             for (let z of senaraiZombie) {
-                z.wobble += (z.wobbleSpeed || 2.8) * dt;
+                z.wobble += 2.0 * dt;
+                z.zigPhase += z.zigSpeed * dt;
 
-                z.erraticTimer = (z.erraticTimer || 2.0) - dt;
-                if (z.erraticTimer <= 0) {
-                    z.erraticTimer = 1.2 + Math.random() * 2.2;
-                    z.zigDir = -(z.zigDir || 1);
-                    if (z.waypoints && z.waypoints.length > 2 && Math.random() < 0.45) {
-                        z.wpIndex = Math.floor(Math.random() * z.waypoints.length);
-                    }
+                const lon = gelombangZig(z.zigPhase) * z.zigLonAmp;
+                const lat = gelombangZig(z.zigPhase * 2) * z.zigLatAmp * z.zigDir;
+
+                const cosA = Math.cos(z.zigAxisAngle);
+                const sinA = Math.sin(z.zigAxisAngle);
+
+                const targetX = z.homeX + cosA * lon - sinA * lat;
+                const targetY = z.homeY + sinA * lon + cosA * lat;
+
+                let nx = z.x;
+                let ny = z.y;
+
+                if (!semakPelanggaran(targetX, z.y, z.radius + 4)) {
+                    nx = targetX;
+                }
+                if (!semakPelanggaran(nx, targetY, z.radius + 4)) {
+                    ny = targetY;
                 }
 
-                if (z.waitTimer > 0) {
-                    z.waitTimer -= dt;
-                    z.vx = 0;
-                    z.vy = 0;
-                    continue;
-                }
+                z.vx = nx - z.x;
+                z.vy = ny - z.y;
+                z.x = nx;
+                z.y = ny;
 
-                const wps = z.waypoints;
-                if (!wps || wps.length === 0) continue;
-
-                const sasaran = wps[z.wpIndex];
-                const dx = sasaran.x - z.x;
-                const dy = sasaran.y - z.y;
-                const dist = Math.hypot(dx, dy);
-
-                if (dist < 10) {
-                    z.x = sasaran.x;
-                    z.y = sasaran.y;
-                    z.wpIndex = (z.wpIndex + 1) % wps.length;
-                    z.waitTimer = 0.08 + Math.random() * 0.28;
-                    z.vx = 0;
-                    z.vy = 0;
-                } else {
-                    const kecepatan = z.speed * (dt * 60);
-                    const ux = dx / dist;
-                    const uy = dy / dist;
-                    const px = -uy;
-                    const py = ux;
-                    const zigOffset = Math.sin(z.wobble) * (z.wobbleAmp || 1.5) * (z.zigDir || 1);
-
-                    let nx = z.x + ux * kecepatan + px * zigOffset;
-                    let ny = z.y + uy * kecepatan + py * zigOffset;
-
-                    if (semakPelanggaran(nx, ny, z.radius)) {
-                        nx = z.x + ux * kecepatan;
-                        ny = z.y + uy * kecepatan;
-                        z.zigDir = -(z.zigDir || 1);
-                    }
-
-                    if (!semakPelanggaran(nx, ny, z.radius)) {
-                        z.vx = nx - z.x;
-                        z.vy = ny - z.y;
-                        z.x = nx;
-                        z.y = ny;
-                    } else {
-                        z.wpIndex = (z.wpIndex + 1) % wps.length;
-                        z.vx = 0;
-                        z.vy = 0;
-                    }
-                }
-
-                if (player.invulnerable <= 0 && Math.hypot(player.x - z.x, player.y - z.y) < player.radius + z.radius - 2) {
+                if (player.invulnerable <= 0 && Math.hypot(player.x - z.x, player.y - z.y) < player.radius + z.radius - 4) {
                     nyawa--;
                     player.invulnerable = 135;
                     screenShake = 16;
@@ -6071,7 +6270,7 @@
 
             for (let zm of zombieMeshes) {
                 zm.mesh.position.set(to3DX(zm.data.x), 0, to3DZ(zm.data.y));
-                if (Math.hypot(zm.data.vx || 0, zm.data.vy || 0) > 0.05) {
+                if (Math.hypot(zm.data.vx || 0, zm.data.vy || 0) > 0.03) {
                     zm.mesh.rotation.y = Math.atan2(zm.data.vx, zm.data.vy);
                 }
                 zm.mesh.rotation.z = Math.sin(zm.data.wobble * 2.2) * 0.09;
