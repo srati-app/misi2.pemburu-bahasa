@@ -1537,8 +1537,9 @@
         const LOCAL_LEADERBOARD_KEY = "misi2_pemburu_harta_karun_records_v1";
         const USED_QUESTIONS_SESSION_KEY = "misi2_soalan_sudah_keluar_v1";
 
-        const MAP_WIDTH = 2440;
-        const MAP_HEIGHT = 1900;
+        // Dimensi peta diselaraskan agar laluan keliling & dalam sekolah tepat sebesar 2 orang berselisih (72 unit)
+        const MAP_WIDTH = 2160;
+        const MAP_HEIGHT = 1632;
         const SCALE_3D = 0.06;
         const TEMPOH_SUASANA = 65;
 
@@ -1569,6 +1570,7 @@
         // Pemboleh Ubah Papan Kedudukan & Admin
         let isAdminUnlocked = false;
         let senaraiTop10Semasa = [];
+        let pendingDeleteRecordId = null;
 
         // Pemboleh Ubah Suasana Siang / Senja
         let modSuasana = 'siang';
@@ -1577,8 +1579,8 @@
 
         // Pemboleh Ubah Objek Pemain & Kawalan
         const player = {
-            x: 1220,
-            y: 950,
+            x: 1224,
+            y: 816,
             radius: 14,
             walkSpeed: 2.35,
             runSpeed: 3.65,
@@ -1598,9 +1600,11 @@
             touchId: null
         };
 
-        let titikMulaPemain = { x: 1220, y: 950 };
+        let titikMulaPemain = { x: 1224, y: 816 };
         let schoolGrid = null;
         let senaraiDinding = [];
+        let senaraiBangunanPeta = [];
+        let bangunanMasukInfo = {};
         let tamanLestariList = [];
         let senaraiZombie = [];
         let senaraiNyawaTerapung = [];
@@ -1837,8 +1841,13 @@
                     const delBtn = document.createElement('button');
                     delBtn.type = 'button';
                     delBtn.className = 'btn-delete-row';
-                    delBtn.title = `Padam rekod ${item.nama}`;
-                    delBtn.textContent = '🗑️';
+                    const isPending = String(pendingDeleteRecordId) === String(item.id);
+                    delBtn.title = isPending ? 'Klik sekali lagi untuk sahkan padam' : `Padam rekod ${item.nama}`;
+                    delBtn.textContent = isPending ? 'Pasti?' : '🗑️';
+                    if (isPending) {
+                        delBtn.style.background = '#dc2626';
+                        delBtn.style.color = '#ffffff';
+                    }
                     delBtn.onclick = () => padamRekodPemenang(item.id, item.nama);
                     row.appendChild(delBtn);
                 }
@@ -2234,7 +2243,7 @@
             const tex = new THREE.CanvasTexture(c);
             tex.wrapS = THREE.RepeatWrapping;
             tex.wrapT = THREE.RepeatWrapping;
-            tex.repeat.set(6, 5);
+            tex.repeat.set(5, 4);
             tex.anisotropy = 4;
             return tex;
         }
@@ -2891,6 +2900,8 @@
             }
 
             senaraiDinding = [];
+            senaraiBangunanPeta = [];
+            bangunanMasukInfo = {};
             tamanLestariList = [];
             streetLampBulbs = [];
             streetPointLights = [];
@@ -2907,11 +2918,11 @@
             const tembok = 36;
             const cols = 8;
             const rows = 7;
-            // Menyekatakan laluan pejalan kaki agar sama besar di semua koridor (100x100)
-            const koridorW = 100;
-            const koridorH = 100;
-            const blokW = 196;
-            const blokH = 158;
+            // Saiz laluan pejalan kaki diseragamkan di keliling (Utara/Selatan/Timur/Barat) & dalam sekolah (72 unit = muat 2 orang berselisih sahaja)
+            const koridorW = 72;
+            const koridorH = 72;
+            const blokW = 216;
+            const blokH = 176;
 
             const kX = (c) => tembok + c * (koridorW + blokW);
             const kY = (r) => tembok + r * (koridorH + blokH);
@@ -2934,23 +2945,26 @@
             groundPlaneMesh.receiveShadow = true;
             worldGroup.add(groundPlaneMesh);
 
-            senaraiDinding.push({ x: 0, y: 0, w: MAP_WIDTH, h: tembok, jenis: 'pagar' });
-            senaraiDinding.push({ x: 0, y: MAP_HEIGHT - tembok, w: MAP_WIDTH, h: tembok, jenis: 'pagar' });
-            senaraiDinding.push({ x: 0, y: 0, w: tembok, h: MAP_HEIGHT, jenis: 'pagar' });
-            senaraiDinding.push({ x: MAP_WIDTH - tembok, y: 0, w: tembok, h: MAP_HEIGHT, jenis: 'pagar' });
+            const pagarUtara = { x: 0, y: 0, w: MAP_WIDTH, h: tembok, jenis: 'pagar' };
+            const pagarSelatan = { x: 0, y: MAP_HEIGHT - tembok, w: MAP_WIDTH, h: tembok, jenis: 'pagar' };
+            const pagarBarat = { x: 0, y: 0, w: tembok, h: MAP_HEIGHT, jenis: 'pagar' };
+            const pagarTimur = { x: MAP_WIDTH - tembok, y: 0, w: tembok, h: MAP_HEIGHT, jenis: 'pagar' };
+            senaraiDinding.push(pagarUtara, pagarSelatan, pagarBarat, pagarTimur);
+            senaraiBangunanPeta.push(pagarUtara, pagarSelatan, pagarBarat, pagarTimur);
 
+            // Mercu tanda bangunan & kawasan sekolah (dilengkapi pintu masuk supaya pemain boleh masuk ke dalam bangunan)
             const mercuTanda = [
-                { bc1: 4, br1: 0, bc2: 6, br2: 1, jenis: 'padang', nama: 'PADANG SEKOLAH' },
-                { bc1: 5, br1: 2, bc2: 6, br2: 2, jenis: 'astaka', nama: 'ASTAKA' },
-                { bc1: 0, br1: 0, bc2: 1, br2: 0, jenis: 'blok_a', nama: 'BLOK AKADEMIK A' },
-                { bc1: 0, br1: 1, bc2: 1, br2: 1, jenis: 'blok_b', nama: 'BLOK AKADEMIK B' },
-                { bc1: 2, br1: 0, bc2: 3, br2: 1, jenis: 'makmal', nama: 'MAKMAL & PSS' },
-                { bc1: 2, br1: 3, bc2: 3, br2: 3, jenis: 'kantin', nama: 'KANTIN SEKOLAH' },
-                { bc1: 0, br1: 3, bc2: 1, br2: 4, jenis: 'taman_sains', nama: 'TAMAN SAINS' },
-                { bc1: 0, br1: 5, bc2: 1, br2: 5, jenis: 'bengkel', nama: 'BENGKEL RBT' },
-                { bc1: 3, br1: 4, bc2: 3, br2: 5, jenis: 'surau', nama: 'SURAU SRATI' },
-                { bc1: 5, br1: 4, bc2: 6, br2: 5, jenis: 'dewan', nama: 'DEWAN TERBUKA' },
-                { bc1: 2, br1: 2, bc2: 2, br2: 2, jenis: 'pra_annur', nama: 'KELAS PRA AN-NUR' },
+                { bc1: 4, br1: 0, bc2: 6, br2: 1, jenis: 'padang', nama: 'PADANG SEKOLAH', pintu: { side: 'bottom', doorC: 5, doorR: 2 }, petiDalam: { dx: 0.62, dy: 0.38 } },
+                { bc1: 5, br1: 2, bc2: 6, br2: 2, jenis: 'astaka', nama: 'ASTAKA', pintu: { side: 'top', doorC: 6, doorR: 2 }, petiDalam: { dx: 0.72, dy: 0.52 } },
+                { bc1: 0, br1: 0, bc2: 1, br2: 0, jenis: 'blok_a', nama: 'BLOK AKADEMIK A', pintu: { side: 'bottom', doorC: 1, doorR: 1 }, petiDalam: { dx: 0.25, dy: 0.50 } },
+                { bc1: 0, br1: 1, bc2: 1, br2: 1, jenis: 'blok_b', nama: 'BLOK AKADEMIK B', pintu: { side: 'bottom', doorC: 1, doorR: 2 }, petiDalam: { dx: 0.25, dy: 0.50 } },
+                { bc1: 2, br1: 0, bc2: 3, br2: 1, jenis: 'makmal', nama: 'MAKMAL & PSS', pintu: { side: 'bottom', doorC: 3, doorR: 2 }, petiDalam: { dx: 0.32, dy: 0.36 } },
+                { bc1: 2, br1: 3, bc2: 3, br2: 3, jenis: 'kantin', nama: 'KANTIN SEKOLAH', pintu: { side: 'bottom', doorC: 3, doorR: 4 }, petiDalam: { dx: 0.20, dy: 0.50 } },
+                { bc1: 0, br1: 3, bc2: 1, br2: 4, jenis: 'taman_sains', nama: 'TAMAN SAINS', pintu: { side: 'bottom', doorC: 1, doorR: 5 }, petiDalam: { dx: 0.50, dy: 0.74 } },
+                { bc1: 0, br1: 5, bc2: 1, br2: 5, jenis: 'bengkel', nama: 'BENGKEL RBT', pintu: { side: 'top', doorC: 1, doorR: 5 }, petiDalam: { dx: 0.25, dy: 0.50 } },
+                { bc1: 3, br1: 4, bc2: 3, br2: 5, jenis: 'surau', nama: 'SURAU SRATI', pintu: { side: 'left', doorC: 3, doorR: 5 }, petiDalam: { dx: 0.50, dy: 0.74 } },
+                { bc1: 5, br1: 4, bc2: 6, br2: 5, jenis: 'dewan', nama: 'DEWAN TERBUKA', pintu: { side: 'top', doorC: 6, doorR: 4 }, petiDalam: { dx: 0.50, dy: 0.66 } },
+                { bc1: 2, br1: 2, bc2: 2, br2: 2, jenis: 'pra_annur', nama: 'KELAS PRA AN-NUR', pintu: { side: 'top', doorC: 2, doorR: 2, customDoorX: 732 }, petiDalam: { dx: 0.62, dy: 0.56 } },
                 { bc1: 4, br1: 3, bc2: 4, br2: 3, jenis: 'transit_ceria', nama: 'BLOK TRANSIT CERIA' }
             ];
 
@@ -2965,10 +2979,96 @@
                 const y1 = kY(m.br1) + koridorH;
                 const x2 = kX(m.bc2 + 1);
                 const y2 = kY(m.br2 + 1);
-                senaraiDinding.push({
-                    x: x1, y: y1, w: x2 - x1, h: y2 - y1,
-                    jenis: m.jenis, nama: m.nama
-                });
+                const bw = x2 - x1;
+                const bh = y2 - y1;
+
+                const rekodBangunan = {
+                    x: x1, y: y1, w: bw, h: bh,
+                    jenis: m.jenis, nama: m.nama, pintu: null
+                };
+                senaraiBangunanPeta.push(rekodBangunan);
+
+                if (m.pintu && m.petiDalam) {
+                    const wallThick = 24;
+                    const doorWidth = 62;
+                    let doorCenterX = x1 + bw / 2;
+                    let doorCenterY = y1 + bh / 2;
+
+                    if (m.pintu.side === 'bottom') {
+                        doorCenterX = m.pintu.customDoorX || pusatX(m.pintu.doorC);
+                        doorCenterY = y2 - wallThick / 2;
+                        senaraiDinding.push({ x: x1, y: y1, w: bw, h: wallThick, jenis: m.jenis });
+                        senaraiDinding.push({ x: x1, y: y1, w: wallThick, h: bh, jenis: m.jenis });
+                        senaraiDinding.push({ x: x2 - wallThick, y: y1, w: wallThick, h: bh, jenis: m.jenis });
+                        const kiriW = Math.max(8, (doorCenterX - doorWidth / 2) - x1);
+                        const kananX = doorCenterX + doorWidth / 2;
+                        const kananW = Math.max(8, x2 - kananX);
+                        senaraiDinding.push({ x: x1, y: y2 - wallThick, w: kiriW, h: wallThick, jenis: m.jenis });
+                        senaraiDinding.push({ x: kananX, y: y2 - wallThick, w: kananW, h: wallThick, jenis: m.jenis });
+                    } else if (m.pintu.side === 'top') {
+                        doorCenterX = m.pintu.customDoorX || pusatX(m.pintu.doorC);
+                        doorCenterY = y1 + wallThick / 2;
+                        senaraiDinding.push({ x: x1, y: y2 - wallThick, w: bw, h: wallThick, jenis: m.jenis });
+                        senaraiDinding.push({ x: x1, y: y1, w: wallThick, h: bh, jenis: m.jenis });
+                        senaraiDinding.push({ x: x2 - wallThick, y: y1, w: wallThick, h: bh, jenis: m.jenis });
+                        const kiriW = Math.max(8, (doorCenterX - doorWidth / 2) - x1);
+                        const kananX = doorCenterX + doorWidth / 2;
+                        const kananW = Math.max(8, x2 - kananX);
+                        senaraiDinding.push({ x: x1, y: y1, w: kiriW, h: wallThick, jenis: m.jenis });
+                        senaraiDinding.push({ x: kananX, y: y1, w: kananW, h: wallThick, jenis: m.jenis });
+                    } else if (m.pintu.side === 'left') {
+                        doorCenterX = x1 + wallThick / 2;
+                        doorCenterY = pusatY(m.pintu.doorR);
+                        senaraiDinding.push({ x: x2 - wallThick, y: y1, w: wallThick, h: bh, jenis: m.jenis });
+                        senaraiDinding.push({ x: x1, y: y1, w: bw, h: wallThick, jenis: m.jenis });
+                        senaraiDinding.push({ x: x1, y: y2 - wallThick, w: bw, h: wallThick, jenis: m.jenis });
+                        const atasH = Math.max(8, (doorCenterY - doorWidth / 2) - y1);
+                        const bawahY = doorCenterY + doorWidth / 2;
+                        const bawahH = Math.max(8, y2 - bawahY);
+                        senaraiDinding.push({ x: x1, y: y1, w: wallThick, h: atasH, jenis: m.jenis });
+                        senaraiDinding.push({ x: x1, y: bawahY, w: wallThick, h: bawahH, jenis: m.jenis });
+                    } else if (m.pintu.side === 'right') {
+                        doorCenterX = x2 - wallThick / 2;
+                        doorCenterY = pusatY(m.pintu.doorR);
+                        senaraiDinding.push({ x: x1, y: y1, w: wallThick, h: bh, jenis: m.jenis });
+                        senaraiDinding.push({ x: x1, y: y1, w: bw, h: wallThick, jenis: m.jenis });
+                        senaraiDinding.push({ x: x1, y: y2 - wallThick, w: bw, h: wallThick, jenis: m.jenis });
+                        const atasH = Math.max(8, (doorCenterY - doorWidth / 2) - y1);
+                        const bawahY = doorCenterY + doorWidth / 2;
+                        const bawahH = Math.max(8, y2 - bawahY);
+                        senaraiDinding.push({ x: x2 - wallThick, y: y1, w: wallThick, h: atasH, jenis: m.jenis });
+                        senaraiDinding.push({ x: x2 - wallThick, y: bawahY, w: wallThick, h: bawahH, jenis: m.jenis });
+                    }
+
+                    // Halang bahagian tengah kolam di Taman Sains supaya pemain berjalan melalui halaman taman
+                    if (m.jenis === 'taman_sains') {
+                        senaraiDinding.push({
+                            x: x1 + bw * 0.25,
+                            y: y1 + bh * 0.28,
+                            w: bw * 0.50,
+                            h: bh * 0.30,
+                            jenis: 'kolam_sains'
+                        });
+                    }
+
+                    rekodBangunan.pintu = {
+                        side: m.pintu.side,
+                        x: doorCenterX,
+                        y: doorCenterY,
+                        width: doorWidth
+                    };
+
+                    bangunanMasukInfo[m.jenis] = {
+                        jenis: m.jenis,
+                        nama: m.nama,
+                        doorC: m.pintu.doorC,
+                        doorR: m.pintu.doorR,
+                        x: x1 + bw * m.petiDalam.dx,
+                        y: y1 + bh * m.petiDalam.dy
+                    };
+                } else {
+                    senaraiDinding.push(rekodBangunan);
+                }
             }
 
             const namaTamanUnik = [
@@ -2986,6 +3086,7 @@
                             nama: namaTamanUnik[indeksTaman % namaTamanUnik.length]
                         };
                         senaraiDinding.push(blokTaman);
+                        senaraiBangunanPeta.push(blokTaman);
                         tamanLestariList.push(blokTaman);
                         indeksTaman++;
                     }
@@ -3067,14 +3168,18 @@
             for (let r = 0; r < rows; r++) {
                 for (let c = 0; c < cols - 1; c++) {
                     if (vWall[r][c] && bolehBukaDinding(c, r, c + 1, r)) {
-                        senaraiDinding.push({ x: kX(c) + koridorW, y: kY(r), w: blokW, h: koridorH, jenis: 'pergola' });
+                        const pergolaH = { x: kX(c) + koridorW, y: kY(r), w: blokW, h: koridorH, jenis: 'pergola' };
+                        senaraiDinding.push(pergolaH);
+                        senaraiBangunanPeta.push(pergolaH);
                     }
                 }
             }
             for (let r = 0; r < rows - 1; r++) {
                 for (let c = 0; c < cols; c++) {
                     if (hWall[r][c] && bolehBukaDinding(c, r, c, r + 1)) {
-                        senaraiDinding.push({ x: kX(c), y: kY(r) + koridorH, w: koridorW, h: blokH, jenis: 'pergola' });
+                        const pergolaV = { x: kX(c), y: kY(r) + koridorH, w: koridorW, h: blokH, jenis: 'pergola' };
+                        senaraiDinding.push(pergolaV);
+                        senaraiBangunanPeta.push(pergolaV);
                     }
                 }
             }
@@ -3092,10 +3197,12 @@
                 emissive: 0xfef08a,
                 emissiveIntensity: 0,
                 roughness: 0.14,
-                metalness: 0.1
+                metalness: 0.1,
+                transparent: true,
+                opacity: 1.0
             });
 
-            for (let d of senaraiDinding) {
+            for (let d of senaraiBangunanPeta) {
                 binaStruktur3D(d);
             }
 
@@ -3106,7 +3213,7 @@
             ];
             lokasiLampu.forEach(([c, r], idx) => {
                 if (c < cols - 1 && r < rows - 1) {
-                    binaTiangLampu3D(to3DX(pusatX(c) + 45), to3DZ(pusatY(r) + 45), idx % 3 === 0);
+                    binaTiangLampu3D(to3DX(pusatX(c) + 28), to3DZ(pusatY(r) + 28), idx % 3 === 0);
                 }
             });
 
@@ -3223,6 +3330,31 @@
             }
         }
 
+        function binaPenandaPintuMasuk3D(pintu) {
+            if (!pintu) return;
+            const px3 = to3DX(pintu.x);
+            const pz3 = to3DZ(pintu.y);
+            const lebarPintu3 = pintu.width * SCALE_3D;
+            const isMelintang = pintu.side === 'top' || pintu.side === 'bottom';
+
+            const tikarMasuk = new THREE.Mesh(
+                new THREE.BoxGeometry(
+                    isMelintang ? lebarPintu3 : 2.5,
+                    0.29,
+                    isMelintang ? 2.5 : lebarPintu3
+                ),
+                new THREE.MeshStandardMaterial({
+                    color: 0xfacc15,
+                    emissive: 0xf59e0b,
+                    emissiveIntensity: 0.28,
+                    roughness: 0.3
+                })
+            );
+            tikarMasuk.position.set(px3, 0.145, pz3);
+            tikarMasuk.receiveShadow = true;
+            worldGroup.add(tikarMasuk);
+        }
+
         function binaStruktur3D(d) {
             const cx = to3DX(d.x + d.w / 2);
             const cz = to3DZ(d.y + d.h / 2);
@@ -3283,6 +3415,7 @@
                 worldGroup.add(padang);
 
                 binaMonumenLogoDanBenderaLego3D(cx, cz, w3, d3);
+                binaPenandaPintuMasuk3D(d.pintu);
             } else if (d.jenis === 'astaka') {
                 const tapak = new THREE.Mesh(
                     new THREE.BoxGeometry(w3, 0.9, d3),
@@ -3303,10 +3436,10 @@
                 worldGroup.add(bumbungAstaka);
 
                 buildingRoofOccluders.push({
-                    minX: cx - w3 / 2 - 0.3,
-                    maxX: cx + w3 / 2 + 0.3,
-                    minZ: cz - d3 / 2 - 0.3,
-                    maxZ: cz + d3 / 2 + 0.3,
+                    minX: cx - w3 / 2 - 0.8,
+                    maxX: cx + w3 / 2 + 0.8,
+                    minZ: cz - d3 / 2 - 0.8,
+                    maxZ: cz + d3 / 2 + 0.8,
                     meshes: [...bumbungAstaka.userData.fadeMeshes],
                     opacity: 1.0
                 });
@@ -3337,6 +3470,7 @@
                     worldGroup.add(kain);
                     flagMeshes.push({ mesh: kain, phase: idx * 1.2 });
                 });
+                binaPenandaPintuMasuk3D(d.pintu);
             } else if (d.jenis === 'taman_sains') {
                 const taman = new THREE.Mesh(
                     new THREE.BoxGeometry(w3, 0.28, d3),
@@ -3407,6 +3541,7 @@
                 [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([sx, sz]) => {
                     binaPokok3D(cx + sx * (w3 * 0.38), cz + sz * (d3 * 0.36), 0.95, 0xf472b6, 0xfbcfe8);
                 });
+                binaPenandaPintuMasuk3D(d.pintu);
             } else if (d.jenis === 'taman_lestari') {
                 binaTamanLestari3D(d, cx, cz, w3, d3);
             } else if (d.jenis === 'pergola') {
@@ -3560,11 +3695,13 @@
                     senaraiMeshBangunan.push(solar);
                 }
 
+                binaPenandaPintuMasuk3D(d.pintu);
+
                 buildingRoofOccluders.push({
-                    minX: cx - bw / 2 - 0.3,
-                    maxX: cx + bw / 2 + 0.3,
-                    minZ: cz - bd / 2 - 0.3,
-                    maxZ: cz + bd / 2 + 0.3,
+                    minX: cx - bw / 2 - 0.8,
+                    maxX: cx + bw / 2 + 0.8,
+                    minZ: cz - bd / 2 - 0.8,
+                    maxZ: cz + bd / 2 + 0.8,
                     meshes: senaraiMeshBangunan,
                     windowMesh: tingkap,
                     opacity: 1.0
@@ -4044,7 +4181,6 @@
             if (!schoolGrid) return;
 
             const { cols, rows, pusatX, pusatY, vWall, hWall, nodDitelan } = schoolGrid;
-            // Kurangkan bilangan zombie (7 sahaja) supaya laluan lebih lapang dan mudah dilepasi
             const jumlahZombie = 7;
 
             const seluarZMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.38 });
@@ -4067,17 +4203,18 @@
                     const nx = pusatX(c);
                     const ny = pusatY(r);
                     const jarakPemain = Math.hypot(nx - titikMulaPemain.x, ny - titikMulaPemain.y);
-                    const jarakHartaPertama = Math.hypot(nx - senaraiHarta[0].x, ny - senaraiHarta[0].y);
-                    if (jarakPemain > 280 && jarakHartaPertama > 190 && !semakPelanggaran(nx, ny, 18)) {
+                    const jarakHartaPertama = (senaraiHarta && senaraiHarta.length > 0)
+                        ? Math.hypot(nx - senaraiHarta[0].x, ny - senaraiHarta[0].y)
+                        : Infinity;
+                    if (jarakPemain > 260 && jarakHartaPertama > 180 && !semakPelanggaran(nx, ny, 16)) {
                         nodSah.push({ c, r, x: nx, y: ny });
                     }
                 }
             }
 
-            // Penempatan rawak tulen dengan jarak pemisah besar supaya zombie tidak saling berdekatan
             let nodAsalDipilih = [];
             let jarakTerdekatTerbaik = -1;
-            const hadJarakCuba = [580, 520, 460, 400];
+            const hadJarakCuba = [540, 480, 420, 360];
 
             for (const hadMinJarak of hadJarakCuba) {
                 for (let percubaan = 0; percubaan < 30; percubaan++) {
@@ -4119,7 +4256,6 @@
             }
 
             nodAsalDipilih.forEach((asal, idx) => {
-                // Tentukan paksi laluan terbuka supaya zombie bergerak zigzag setempat dengan ruang tepi yang luas
                 const bukaMendatar = (asal.c > 0 && !vWall[asal.r][asal.c - 1]) || (asal.c < cols - 1 && !vWall[asal.r][asal.c]);
                 const bukaMenegak = (asal.r > 0 && !hWall[asal.r - 1][asal.c]) || (asal.r < rows - 1 && !hWall[asal.r][asal.c]);
 
@@ -4144,8 +4280,8 @@
                     zigAxisAngle,
                     zigPhase: Math.random() * Math.PI * 2,
                     zigSpeed: 0.85 + (idx % 3) * 0.12,
-                    zigLonAmp: 30,
-                    zigLatAmp: 24,
+                    zigLonAmp: 24,
+                    zigLatAmp: 16,
                     zigDir: idx % 2 === 0 ? 1 : -1
                 };
                 senaraiZombie.push(zData);
@@ -4180,12 +4316,14 @@
                 studKepalaZ.position.y = 3.25;
                 zGroup.add(studKepalaZ);
 
+                const lenganList = [];
                 [-0.7, 0.7].forEach((ax) => {
                     const lenganZ = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.15, 0.92, 10), kulitZMat);
                     lenganZ.rotation.x = Math.PI / 2.2;
                     lenganZ.position.set(ax, 2.15, 0.45);
                     lenganZ.castShadow = true;
                     zGroup.add(lenganZ);
+                    lenganList.push(lenganZ);
 
                     const tanganZ = new THREE.Mesh(
                         new THREE.TorusGeometry(0.15, 0.06, 8, 14, Math.PI * 1.4),
@@ -4205,7 +4343,7 @@
 
                 zGroup.position.set(to3DX(asal.x), 0, to3DZ(asal.y));
                 worldGroup.add(zGroup);
-                zombieMeshes.push({ data: zData, mesh: zGroup });
+                zombieMeshes.push({ data: zData, mesh: zGroup, lenganList });
             });
         }
 
@@ -4228,7 +4366,7 @@
                     const nx = pusatX(c);
                     const ny = pusatY(r);
                     const jarakMula = Math.hypot(nx - titikMulaPemain.x, ny - titikMulaPemain.y);
-                    if (jarakMula >= 650 && !semakPelanggaran(nx, ny, 16)) {
+                    if (jarakMula >= 520 && !semakPelanggaran(nx, ny, 16)) {
                         nodJauh.push({ x: nx, y: ny });
                     }
                 }
@@ -4238,7 +4376,7 @@
             const lokasiDipilih = [];
             for (let nod of nodJauh) {
                 if (lokasiDipilih.length >= 2) break;
-                const jauhDariLain = lokasiDipilih.every(p => Math.hypot(p.x - nod.x, p.y - nod.y) > 500);
+                const jauhDariLain = lokasiDipilih.every(p => Math.hypot(p.x - nod.x, p.y - nod.y) > 420);
                 if (jauhDariLain) lokasiDipilih.push(nod);
             }
 
@@ -4351,6 +4489,9 @@
                 const x3 = to3DX(h.x);
                 const z3 = to3DZ(h.y);
                 treasureChest3D.position.set(x3, 0, z3);
+                if (treasureChest3D.userData.penutupGroup) {
+                    treasureChest3D.userData.penutupGroup.rotation.x = 0;
+                }
                 treasureChest3D.visible = true;
                 treasureLight3D.position.set(x3, 3.2, z3);
                 treasureLight3D.intensity = 1.4;
@@ -4489,67 +4630,88 @@
             }
         };
 
+        // Lokasi peti harta karun merangkumi bahagian DALAM bangunan sekolah dan laluan taman dalaman (mengelakkan penjuru luar)
         const LOKASI_PANTUN_SEKOLAH = [
             {
-                lokasiNama: "PADANG SEKOLAH & ASTAKA",
-                pantun: "Berlari kencang mengejar bola, rumput menghijau luas terbentang; Pergi ke padang dan juga astaka, di tepi padang peti menanti.",
-                pilihNod: () => [
-                    { c: 4, r: 2 },
-                    { c: 5, r: 2 },
-                    { c: 6, r: 2 },
-                    { c: 7, r: 0 },
-                    { c: 7, r: 1 },
-                    { c: 7, r: 2 },
-                    { c: 7, r: 3 }
-                ]
+                lokasiNama: "BLOK AKADEMIK A",
+                dalamBangunan: true,
+                jenisBangunan: "blok_a",
+                pantun: "Pagi hari membaca buku, ilmu dicari setiap masa; Masuk ke dalam Blok Akademik A, di ruang kelas peti berada."
             },
             {
-                lokasiNama: "KANTIN SEKOLAH & PONDOK BACAAN",
-                pantun: "Loceng berbunyi waktu rehat, membeli kuih dan air milo; Menuju ke kantin perut pun sihat, peti tersorok di lorong sisi.",
-                pilihNod: () => [
-                    { c: 2, r: 3 },
-                    { c: 3, r: 3 },
-                    { c: 2, r: 4 },
-                    { c: 4, r: 4 },
-                    { c: 2, r: 5 }
-                ]
+                lokasiNama: "BLOK AKADEMIK B",
+                dalamBangunan: true,
+                jenisBangunan: "blok_b",
+                pantun: "Menulis karangan di atas meja, guru membimbing penuh mesra; Langkah masuk ke Blok Akademik B, di hujung bilik peti terbuka."
+            },
+            {
+                lokasiNama: "MAKMAL & PSS",
+                dalamBangunan: true,
+                jenisBangunan: "makmal",
+                pantun: "Radas sains tersusun rapi, buku cerita penuh di rak; Masuk ke dalam Makmal dan PSS, di tengah ruang peti terletak."
+            },
+            {
+                lokasiNama: "PADANG SEKOLAH",
+                dalamBangunan: true,
+                jenisBangunan: "padang",
+                pantun: "Berlari kencang mengejar bola, rumput menghijau luas terbentang; Masuk ke kawasan Padang Sekolah, di tengah padang peti menanti."
+            },
+            {
+                lokasiNama: "ASTAKA",
+                dalamBangunan: true,
+                jenisBangunan: "astaka",
+                pantun: "Bendera berkibar ditiup bayu, tempat tetamu duduk bersila; Naik ke pentas di dalam Astaka, di ruang tengah peti berada."
+            },
+            {
+                lokasiNama: "KANTIN SEKOLAH",
+                dalamBangunan: true,
+                jenisBangunan: "kantin",
+                pantun: "Loceng berbunyi waktu rehat, membeli kuih dan air milo; Masuk ke dalam Kantin Sekolah, di ruang makan peti menanti."
+            },
+            {
+                lokasiNama: "TAMAN SAINS",
+                dalamBangunan: true,
+                jenisBangunan: "taman_sains",
+                pantun: "Kolam ikan berenang riang, pokok bunga subur menghijau; Masuk ke dalam Taman Sains, di tepi jambatan peti berkilau."
+            },
+            {
+                lokasiNama: "BENGKEL RBT",
+                dalamBangunan: true,
+                jenisBangunan: "bengkel",
+                pantun: "Gergaji dan tukul tersusun kemas, murid mencipta projek baharu; Masuk ke dalam Bengkel RBT, di meja kerja peti menunggu."
             },
             {
                 lokasiNama: "SURAU SRATI",
-                pantun: "Azan berkumandang merdu sekali, tempat beribadah bersih berseri; Ke Surau SRATI langkah diatur, harta tersembunyi di hujung selatan.",
-                pilihNod: () => [
-                    { c: 3, r: 4 },
-                    { c: 4, r: 5 },
-                    { c: 3, r: 6 },
-                    { c: 4, r: 6 },
-                    { c: 5, r: 6 }
-                ]
+                dalamBangunan: true,
+                jenisBangunan: "surau",
+                pantun: "Azan berkumandang merdu sekali, tempat beribadah bersih berseri; Masuk ke dalam Surau SRATI, di ruang solat peti tersembunyi."
             },
             {
-                lokasiNama: "TAMAN SAINS & BLOK AKADEMIK",
-                pantun: "Indah sungguh taman sains di tepi, kolam ikan berenang riang; Blok akademik di sebelah kiri, cari peti di penjuru barat.",
+                lokasiNama: "DEWAN TERBUKA",
+                dalamBangunan: true,
+                jenisBangunan: "dewan",
+                pantun: "Perhimpunan pagi berbaris tegak, ucapan guru penuh nasihat; Masuk ke dalam Dewan Terbuka, di tengah pentas peti memikat."
+            },
+            {
+                lokasiNama: "KELAS PRA AN-NUR",
+                dalamBangunan: true,
+                jenisBangunan: "pra_annur",
+                pantun: "Adik kecil belajar mengeja, warna-warni ceria suasana; Masuk ke Kelas Pra An-Nur, di ruang belajar peti berada."
+            },
+            {
+                lokasiNama: "LALUAN TAMAN LESTARI",
+                dalamBangunan: false,
+                pantun: "Angin bertiup menyapa pipi, bunga mekar di tepi laluan; Susuri lorong di sisi taman, di tengah laluan peti menawan.",
                 pilihNod: () => [
-                    { c: 0, r: 0 },
-                    { c: 0, r: 2 },
-                    { c: 0, r: 4 },
                     { c: 1, r: 2 },
-                    { c: 2, r: 0 },
-                    { c: 2, r: 1 },
-                    { c: 1, r: 5 }
-                ]
-            },
-            {
-                lokasiNama: "DEWAN TERBUKA & BENGKEL RBT",
-                pantun: "Majlis gilang-gemilang di dewan terbuka, bengkel RBT pula di hujung lorong; Perhatikan arah sekitar dewan dan bengkel, peti harta menanti di penjuru jauh.",
-                pilihNod: () => [
-                    { c: 5, r: 4 },
-                    { c: 6, r: 4 },
-                    { c: 7, r: 5 },
-                    { c: 7, r: 6 },
-                    { c: 6, r: 6 },
-                    { c: 0, r: 6 },
-                    { c: 1, r: 6 },
-                    { c: 2, r: 6 }
+                    { c: 2, r: 2 },
+                    { c: 2, r: 4 },
+                    { c: 2, r: 5 },
+                    { c: 4, r: 2 },
+                    { c: 4, r: 4 },
+                    { c: 4, r: 5 },
+                    { c: 5, r: 3 },
+                    { c: 6, r: 3 }
                 ]
             }
         ];
@@ -4747,11 +4909,8 @@
             const jumlahPeti = 5;
             let sudahKeluar = bacaRekodSoalanTerpakai();
 
-            // Tapis soalan daripada 25 bank soalan yang BELUM keluar dalam sesi-sesi sebelum ini
             let calonBaharu = BANK_SOALAN_HARTA.filter(s => !sudahKeluar.includes(s.soalanId));
 
-            // Jika baki soalan belum keluar kurang daripada 5, tetapkan semula kitaran 25 soalan
-            // sambil mengelakkan 5 soalan terakhir daripada pusingan sebelumnya berulang serta-merta
             if (calonBaharu.length < jumlahPeti) {
                 const limaTerakhir = sudahKeluar.slice(-jumlahPeti);
                 const bakiSediaAda = acakTatasusunanFisherYates(calonBaharu);
@@ -4766,7 +4925,6 @@
 
             const limaSoalanDipilih = acakTatasusunanFisherYates(calonBaharu).slice(0, jumlahPeti);
 
-            // Rekodkan ID 5 soalan yang dipilih supaya tidak berulang apabila pemain keluar & masuk semula
             const rekodBaharu = [...sudahKeluar, ...limaSoalanDipilih.map(s => s.soalanId)];
             simpanRekodSoalanTerpakai(rekodBaharu);
 
@@ -4777,7 +4935,6 @@
                 const skema = SKEMA_JAWAPAN_BM[item.soalanId];
                 const jawapanAsal = skema ? skema.jawapanIndex : item.jawapan;
 
-                // Acak juga kedudukan pilihan jawapan (A, B, C, D) supaya murid membaca pilihan dengan teliti
                 const pasanganPilihan = item.pilihan.map((teks, pIdx) => ({
                     teks,
                     betul: pIdx === jawapanAsal
@@ -4791,8 +4948,8 @@
                     lokasiNama: lok.lokasiNama,
                     pantun: lok.pantun,
                     pilihNod: lok.pilihNod,
-                    x: 1220,
-                    y: 950
+                    x: 1224,
+                    y: 816
                 };
             });
         }
@@ -4833,83 +4990,122 @@
         }
 
         function rawakkanLokasiHartaKarun(pusatX, pusatY, titikMula) {
-            const semuaNod = [];
-            if (schoolGrid) {
-                for (let r = 0; r < schoolGrid.rows; r++) {
-                    for (let c = 0; c < schoolGrid.cols; c++) {
-                        if (!schoolGrid.nodDitelan[r][c]) {
-                            const nx = pusatX(c);
-                            const ny = pusatY(r);
-                            if (!semakPelanggaran(nx, ny, 16)) {
-                                semuaNod.push({ c, r, x: nx, y: ny });
-                            }
+            const petaJarakDariMula = kiraPetaJarakBFS(4, 3);
+            const penjuruLuar = new Set(['0,0', '7,0', '0,6', '7,6']);
+
+            // Bina himpunan calon lokasi: gabungan ruang DALAM bangunan sekolah + laluan taman dalaman (mengelakkan penjuru)
+            const calonSemuaLokasi = [];
+
+            for (const lok of LOKASI_PANTUN_SEKOLAH) {
+                if (lok.dalamBangunan && lok.jenisBangunan && bangunanMasukInfo[lok.jenisBangunan]) {
+                    const infoB = bangunanMasukInfo[lok.jenisBangunan];
+                    const langkahDariMula = petaJarakDariMula ? petaJarakDariMula[infoB.doorR][infoB.doorC] : 6;
+                    const jarakMula = Math.hypot(infoB.x - titikMula.x, infoB.y - titikMula.y);
+
+                    if (langkahDariMula !== Infinity && jarakMula >= 450 && !semakPelanggaran(infoB.x, infoB.y, 16)) {
+                        calonSemuaLokasi.push({
+                            c: infoB.doorC,
+                            r: infoB.doorR,
+                            x: infoB.x,
+                            y: infoB.y,
+                            lokasiNama: lok.lokasiNama,
+                            pantun: lok.pantun,
+                            dalamBangunan: true,
+                            jarakMula,
+                            langkahDariMula
+                        });
+                    }
+                } else if (!lok.dalamBangunan && typeof lok.pilihNod === 'function') {
+                    for (const n of lok.pilihNod()) {
+                        if (penjuruLuar.has(`${n.c},${n.r}`)) continue;
+                        if (schoolGrid && schoolGrid.nodDitelan[n.r] && schoolGrid.nodDitelan[n.r][n.c]) continue;
+                        const nx = pusatX(n.c);
+                        const ny = pusatY(n.r);
+                        const langkahDariMula = petaJarakDariMula ? petaJarakDariMula[n.r][n.c] : 6;
+                        const jarakMula = Math.hypot(nx - titikMula.x, ny - titikMula.y);
+
+                        if (langkahDariMula !== Infinity && langkahDariMula >= 5 && jarakMula >= 480 && !semakPelanggaran(nx, ny, 16)) {
+                            calonSemuaLokasi.push({
+                                c: n.c,
+                                r: n.r,
+                                x: nx,
+                                y: ny,
+                                lokasiNama: lok.lokasiNama,
+                                pantun: lok.pantun,
+                                dalamBangunan: false,
+                                jarakMula,
+                                langkahDariMula
+                            });
                         }
                     }
                 }
             }
 
-            // Susun urutan peti harta karun supaya setiap lokasi baharu berada jauh dari lokasi sebelumnya
-            const bakiHarta = [...senaraiHarta];
-            const susunanHartaBaharu = [];
-            const lokasiTerpakai = [];
+            // Pilih 5 lokasi berbeza: 3-4 di dalam bangunan sekolah + 1-2 di laluan taman dalaman (semua jauh dari pemain)
+            const calonBangunan = acakTatasusunanFisherYates(calonSemuaLokasi.filter(c => c.dalamBangunan));
+            const calonLaluan = acakTatasusunanFisherYates(calonSemuaLokasi.filter(c => !c.dalamBangunan));
+
+            const sasaranDalamBangunan = Math.random() < 0.5 ? 3 : 4;
+            const lokasiDipilih = [];
+
+            for (const pt of calonBangunan) {
+                if (lokasiDipilih.length >= sasaranDalamBangunan) break;
+                const jauhDariLain = lokasiDipilih.every(u => Math.hypot(u.x - pt.x, u.y - pt.y) >= 480);
+                if (jauhDariLain) {
+                    lokasiDipilih.push(pt);
+                }
+            }
+
+            for (const pt of calonLaluan) {
+                if (lokasiDipilih.length >= senaraiHarta.length) break;
+                const jauhDariLain = lokasiDipilih.every(u => Math.hypot(u.x - pt.x, u.y - pt.y) >= 480);
+                if (jauhDariLain) {
+                    lokasiDipilih.push(pt);
+                }
+            }
+
+            for (const pt of acakTatasusunanFisherYates(calonSemuaLokasi)) {
+                if (lokasiDipilih.length >= senaraiHarta.length) break;
+                const sudahAda = lokasiDipilih.some(u => Math.hypot(u.x - pt.x, u.y - pt.y) < 360);
+                if (!sudahAda) {
+                    lokasiDipilih.push(pt);
+                }
+            }
+
+            // Susun urutan 5 peti supaya setiap peti berturut-turut berada jauh dari lokasi sebelumnya
+            const bakiLokasi = [...lokasiDipilih];
+            const urutanLokasiTerbaik = [];
             let nodRujukan = { c: 4, r: 3, x: titikMula.x, y: titikMula.y };
 
-            while (bakiHarta.length > 0) {
+            while (bakiLokasi.length > 0 && urutanLokasiTerbaik.length < senaraiHarta.length) {
                 const petaJarak = kiraPetaJarakBFS(nodRujukan.c, nodRujukan.r);
-                let pilihanTerbaik = null;
+                let idxTerbaik = 0;
                 let skorTerbaik = -Infinity;
 
-                bakiHarta.forEach((harta, hIdx) => {
-                    const senaraiCalonNod = typeof harta.pilihNod === 'function' ? harta.pilihNod() : [];
-                    const calonSah = senaraiCalonNod
-                        .map(n => ({ c: n.c, r: n.r, x: pusatX(n.c), y: pusatY(n.r) }))
-                        .filter(pt => {
-                            if (schoolGrid && schoolGrid.nodDitelan[pt.r] && schoolGrid.nodDitelan[pt.r][pt.c]) return false;
-                            if (semakPelanggaran(pt.x, pt.y, 16)) return false;
-                            const langkahBFS = petaJarak ? petaJarak[pt.r][pt.c] : 1;
-                            if (langkahBFS === Infinity) return false;
-                            const terlaluDekatPetiLain = lokasiTerpakai.some(u => Math.hypot(u.x - pt.x, u.y - pt.y) < 420);
-                            return !terlaluDekatPetiLain;
-                        });
-
-                    const senaraiUji = calonSah.length > 0 ? calonSah : semuaNod.filter(pt => {
-                        const langkahBFS = petaJarak ? petaJarak[pt.r][pt.c] : 1;
-                        return langkahBFS !== Infinity && !lokasiTerpakai.some(u => Math.hypot(u.x - pt.x, u.y - pt.y) < 360);
-                    });
-
-                    for (const pt of senaraiUji) {
-                        const langkahBFS = petaJarak ? petaJarak[pt.r][pt.c] : 1;
-                        const jarakGarisLurus = Math.hypot(pt.x - nodRujukan.x, pt.y - nodRujukan.y);
-                        const jarakMula = Math.hypot(pt.x - titikMula.x, pt.y - titikMula.y);
-
-                        // Beri keutamaan tinggi kepada jarak laluan BFS + jarak lurus dari lokasi sebelumnya
-                        const bonusJauh = jarakGarisLurus >= 850 ? 600 : 0;
-                        const skor = (langkahBFS * 170) + jarakGarisLurus + (jarakMula * 0.25) + bonusJauh + (Math.random() * 140);
-
-                        if (skor > skorTerbaik) {
-                            skorTerbaik = skor;
-                            pilihanTerbaik = { hIdx, pt };
-                        }
+                bakiLokasi.forEach((pt, idx) => {
+                    const langkahBFS = petaJarak ? petaJarak[pt.r][pt.c] : 5;
+                    const jarakLurus = Math.hypot(pt.x - nodRujukan.x, pt.y - nodRujukan.y);
+                    const skor = (langkahBFS * 130) + jarakLurus + (pt.jarakMula * 0.35) + (Math.random() * 120);
+                    if (skor > skorTerbaik) {
+                        skorTerbaik = skor;
+                        idxTerbaik = idx;
                     }
                 });
 
-                if (pilihanTerbaik) {
-                    const [hartaDipilih] = bakiHarta.splice(pilihanTerbaik.hIdx, 1);
-                    hartaDipilih.x = pilihanTerbaik.pt.x;
-                    hartaDipilih.y = pilihanTerbaik.pt.y;
-                    susunanHartaBaharu.push(hartaDipilih);
-                    lokasiTerpakai.push(pilihanTerbaik.pt);
-                    nodRujukan = pilihanTerbaik.pt;
-                } else {
-                    const [hartaSisa] = bakiHarta.splice(0, 1);
-                    const nodFallback = semuaNod[semuaNod.length - 1] || { c: 0, r: 0, x: titikMula.x + 150, y: titikMula.y };
-                    hartaSisa.x = nodFallback.x;
-                    hartaSisa.y = nodFallback.y;
-                    susunanHartaBaharu.push(hartaSisa);
-                }
+                const [dipilih] = bakiLokasi.splice(idxTerbaik, 1);
+                urutanLokasiTerbaik.push(dipilih);
+                nodRujukan = dipilih;
             }
 
-            senaraiHarta = susunanHartaBaharu;
+            senaraiHarta.forEach((harta, idx) => {
+                const lok = urutanLokasiTerbaik[idx];
+                if (lok) {
+                    harta.x = lok.x;
+                    harta.y = lok.y;
+                    harta.lokasiNama = lok.lokasiNama;
+                    harta.pantun = lok.pantun;
+                }
+            });
         }
 
         function escapeHTML(str) {
@@ -5019,6 +5215,7 @@
         function bukaSemakKedudukan() {
             bukaKunciAudio();
             mainBunyi('klik');
+            pendingDeleteRecordId = null;
 
             const lbScreen = document.getElementById('leaderboard-screen');
             if (lbScreen) lbScreen.classList.remove('hidden');
@@ -5033,6 +5230,7 @@
 
         function tutupSkorKedudukan() {
             mainBunyi('klik');
+            pendingDeleteRecordId = null;
             const lbScreen = document.getElementById('leaderboard-screen');
             if (lbScreen) lbScreen.classList.add('hidden');
         }
@@ -5063,6 +5261,7 @@
 
             if (val === ADMIN_PASSWORD_SAH) {
                 isAdminUnlocked = true;
+                pendingDeleteRecordId = null;
                 mainBunyi('betul');
                 const passBox = document.getElementById('admin-password-box');
                 const banner = document.getElementById('admin-active-banner');
@@ -5090,6 +5289,7 @@
 
         function kunciSemulaAdmin() {
             isAdminUnlocked = false;
+            pendingDeleteRecordId = null;
             mainBunyi('klik');
             const banner = document.getElementById('admin-active-banner');
             const lockBtn = document.getElementById('btn-admin-lock');
@@ -5106,9 +5306,14 @@
             if (!isAdminUnlocked) return;
             mainBunyi('klik');
 
-            const sahPadam = window.confirm(`Padam rekod peserta "${namaPeserta}" daripada papan kedudukan?`);
-            if (!sahPadam) return;
+            // Pengesahan 2-klik terus pada butang tanpa menggunakan window.confirm()
+            if (String(pendingDeleteRecordId) !== String(recordId)) {
+                pendingDeleteRecordId = recordId;
+                paparSenaraiTop10UI();
+                return;
+            }
 
+            pendingDeleteRecordId = null;
             const senaraiBaharu = bacaRekodTempatan(true).filter(item => String(item.id) !== String(recordId));
             senaraiTop10Semasa = simpanRekodTempatan(senaraiBaharu);
             paparSenaraiTop10UI();
@@ -5270,35 +5475,32 @@
             bukaKunciAudio();
             mainBunyi('klik');
 
-            const pauseScreen = document.getElementById('pause-screen');
-            if (pauseScreen) pauseScreen.classList.add('hidden');
+            if (dariPause) {
+                kembaliKeMenuUtama();
+                return;
+            }
 
+            const sudahPauseSebelum = isPaused;
             isPaused = true;
-            const btnPause = document.getElementById('btn-pause');
-            if (btnPause) btnPause.textContent = '▶️';
 
-            tunjukMesej(
+            paparMesej(
                 "🚪 Keluar ke Menu Utama?",
-                "Adakah anda pasti mahu menamatkan misi semasa dan kembali ke menu utama? Kemajuan peti semasa tidak akan disimpan.",
-                "Ya, Keluar Sekarang",
+                "Kemajuan pencarian harta karun dalam sesi ini tidak akan disimpan. Adakah anda pasti mahu keluar?",
+                "Ya, Keluar",
                 () => {
-                    laksanakanQuitKeMenu();
+                    kembaliKeMenuUtama();
                 },
-                "Batal & Sambung Misi",
+                "Batal",
                 () => {
-                    isPaused = false;
-                    if (btnPause) btnPause.textContent = '⏸️';
+                    isPaused = sudahPauseSebelum;
                     lastFrameTime = performance.now();
-                    const bgMusic = document.getElementById('bg-music');
-                    if (bgMusic && audioDibenarkan) {
-                        bgMusic.play().catch(() => {});
-                    }
                 }
             );
         }
 
-        function laksanakanQuitKeMenu() {
+        function kembaliKeMenuUtama() {
             clearInterval(quizTimerInterval);
+            quizTimerInterval = null;
             clearInterval(autoExitMenuTimer);
             autoExitMenuTimer = null;
 
@@ -5307,13 +5509,6 @@
             isQuizActive = false;
             isMessageActive = false;
             isAnimasiPeti = false;
-            isMoving = false;
-            isRunning = false;
-            player.targetX = null;
-            player.targetY = null;
-            joystickData.active = false;
-            joystickData.vecX = 0;
-            joystickData.vecY = 0;
 
             const bgMusic = document.getElementById('bg-music');
             if (bgMusic) {
@@ -5328,1067 +5523,1044 @@
             document.getElementById('message-screen').classList.add('hidden');
             document.getElementById('pause-screen').classList.add('hidden');
             document.getElementById('joystick-zone').style.display = 'none';
-
-            const btnPause = document.getElementById('btn-pause');
-            if (btnPause) btnPause.textContent = '⏸️';
-
             document.getElementById('start-screen').classList.remove('hidden');
         }
 
-        function kemaskiniHUD() {
-            document.getElementById('hud-player').textContent = `👤 ${namaPemain} (${kelasPemain})`;
-            document.getElementById('hud-lives').textContent = nyawa > 0 ? '❤️'.repeat(nyawa) : '💔';
-            document.getElementById('hud-treasure').textContent = `🧰 Peti: ${indexHarta}/${senaraiHarta.length}`;
-            document.getElementById('hud-score').textContent = `💎 ${jumlahDiamond}`;
-        }
+        function tukarModKamera() {
+            if (!gameStarted) return;
+            bukaKunciAudio();
+            mainBunyi('klik');
 
-        function kemaskiniPembayang() {
-            if (indexHarta < senaraiHarta.length) {
-                const h = senaraiHarta[indexHarta];
-                document.getElementById('clue-title').textContent = `📜 Pembayang Harta Karun #${indexHarta + 1}`;
-                document.getElementById('clue-text').textContent = `"${h.pantun}"`;
+            const btnKam = document.getElementById('btn-kamera');
+            if (cameraMode === 'chase') {
+                cameraMode = 'top';
+                if (btnKam) btnKam.textContent = '🎥';
+                tunjukToastSuasana("🎥 Mod Pandangan Atas 3D diaktifkan.");
+            } else {
+                cameraMode = 'chase';
+                cameraYaw = player.angle + Math.PI;
+                cameraPitch = 0;
+                if (btnKam) btnKam.textContent = '📷';
+                tunjukToastSuasana("📷 Mod Kamera Belakang Watak (FPV) diaktifkan.");
             }
         }
 
         function tunjukToastSuasana(teks) {
             const toast = document.getElementById('suasana-toast');
+            if (!toast) return;
             toast.textContent = teks;
             toast.classList.add('show');
             clearTimeout(toastTimeout);
-            toastTimeout = setTimeout(() => toast.classList.remove('show'), 3600);
+            toastTimeout = setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3400);
         }
 
-        function togolSuasanaSiangSenja() {
-            modSuasana = modSuasana === 'siang' ? 'senja' : 'siang';
-            pemasaSuasana = TEMPOH_SUASANA;
-            mainBunyi('suasana');
-            tunjukToastSuasana(
-                modSuasana === 'senja'
-                    ? '🌇 Suasana bertukar ke Waktu Senja! Lampu jalan & kunang-kunang mulai menyala.'
-                    : '☀️ Suasana bertukar ke Waktu Siang yang cerah!'
-            );
+        function kemaskiniHUD() {
+            const elPlayer = document.getElementById('hud-player');
+            const elLives = document.getElementById('hud-lives');
+            const elTreasure = document.getElementById('hud-treasure');
+            const elScore = document.getElementById('hud-score');
+
+            if (elPlayer) {
+                const ikon = jantinaPemain === 'perempuan' ? '👧' : '👦';
+                elPlayer.textContent = `${ikon} ${namaPemain}`;
+            }
+            if (elLives) {
+                const hatiPenuh = '❤️'.repeat(Math.max(0, nyawa));
+                const hatiKosong = '🖤'.repeat(Math.max(0, 3 - nyawa));
+                elLives.textContent = hatiPenuh + hatiKosong;
+            }
+            if (elTreasure) {
+                elTreasure.textContent = `🧰 Peti: ${indexHarta}/${senaraiHarta.length}`;
+            }
+            if (elScore) {
+                elScore.textContent = `💎 ${jumlahDiamond}`;
+            }
         }
 
-        function bukaKuizHartaKarun() {
-            isQuizActive = true;
-            isMoving = false;
+        function kemaskiniPembayang() {
+            const titleEl = document.getElementById('clue-title');
+            const textEl = document.getElementById('clue-text');
+            if (!titleEl || !textEl) return;
+
+            if (indexHarta < senaraiHarta.length) {
+                const h = senaraiHarta[indexHarta];
+                titleEl.textContent = `📜 Pembayang Peti #${indexHarta + 1} (${h.lokasiNama})`;
+                textEl.textContent = `"${h.pantun}"`;
+            } else {
+                titleEl.textContent = "🎉 Semua Peti Telah Ditemui!";
+                textEl.textContent = "Tahniah, pengembara bahasa!";
+            }
+        }
+
+        function paparMesej(tajuk, kandunganHTML, teksUtama, onUtama, teksKedua = null, onKedua = null) {
+            isMessageActive = true;
+            const screen = document.getElementById('message-screen');
+            const titleEl = document.getElementById('msg-title');
+            const bodyEl = document.getElementById('msg-body');
+            const btn1 = document.getElementById('msg-btn');
+            const btn2 = document.getElementById('msg-btn-secondary');
+
+            titleEl.textContent = tajuk;
+            bodyEl.innerHTML = kandunganHTML;
+            btn1.textContent = teksUtama;
+            btn1.onclick = () => {
+                screen.classList.add('hidden');
+                isMessageActive = false;
+                lastFrameTime = performance.now();
+                if (typeof onUtama === 'function') onUtama();
+            };
+
+            if (teksKedua) {
+                btn2.textContent = teksKedua;
+                btn2.classList.remove('hidden');
+                btn2.onclick = () => {
+                    screen.classList.add('hidden');
+                    isMessageActive = false;
+                    lastFrameTime = performance.now();
+                    if (typeof onKedua === 'function') onKedua();
+                };
+            } else {
+                btn2.classList.add('hidden');
+                btn2.onclick = null;
+            }
+
+            screen.classList.remove('hidden');
+        }
+
+        // =========================================================================
+        // 10. INTERAKSI PETI HARTA KARUN, KUIZ TATABAHASA & TAMAT MISI
+        // =========================================================================
+        function mulaAnimasiBukaPeti() {
+            if (isAnimasiPeti || isQuizActive || indexHarta >= senaraiHarta.length) return;
+            isAnimasiPeti = true;
             player.targetX = null;
             player.targetY = null;
             if (targetRing3D) targetRing3D.visible = false;
 
-            const h = senaraiHarta[indexHarta];
-            document.getElementById('quiz-question').textContent = h.soalan;
-            const optContainer = document.getElementById('quiz-options');
-            optContainer.innerHTML = '';
-
-            const huruf = ['A', 'B', 'C', 'D'];
-            h.pilihan.forEach((teksPilihan, idx) => {
-                const btn = document.createElement('button');
-                btn.className = 'quiz-btn';
-                btn.textContent = `${huruf[idx]}. ${teksPilihan}`;
-                btn.onclick = () => semakJawapanKuiz(idx);
-                optContainer.appendChild(btn);
-            });
-
-            masaKuiz = 20;
-            document.getElementById('quiz-timer').textContent = `⏳ Masa: ${masaKuiz}s`;
-            document.getElementById('quiz-screen').classList.remove('hidden');
-
-            clearInterval(quizTimerInterval);
-            quizTimerInterval = setInterval(() => {
-                masaKuiz--;
-                document.getElementById('quiz-timer').textContent = `⏳ Masa: ${masaKuiz}s`;
-                if (masaKuiz <= 0) {
-                    clearInterval(quizTimerInterval);
-                    semakJawapanKuiz(-1, true);
-                }
-            }, 1000);
-        }
-
-        function lancarkanAnimasiBukaPeti() {
-            isAnimasiPeti = true;
             mainBunyi('peti');
 
+            // Ledakan permata & konfeti LEGO 3D
             const h = senaraiHarta[indexHarta];
-            const x3 = to3DX(h.x);
-            const z3 = to3DZ(h.y);
+            ciptaKesanPermataDanKonfeti3D(to3DX(h.x), to3DZ(h.y));
 
+            let progress = 0;
+            const animInterval = setInterval(() => {
+                progress += 0.08;
+                if (treasureChest3D && treasureChest3D.userData.penutupGroup) {
+                    treasureChest3D.userData.penutupGroup.rotation.x = -Math.min(1, progress) * 1.15;
+                }
+                if (progress >= 1) {
+                    clearInterval(animInterval);
+                    isAnimasiPeti = false;
+                    bukaKuizHartaKarun();
+                }
+            }, 30);
+        }
+
+        function ciptaKesanPermataDanKonfeti3D(x3, z3) {
+            const permataGeo = new THREE.OctahedronGeometry(0.28, 0);
             const permataMat = new THREE.MeshStandardMaterial({
                 color: 0x38bdf8,
                 emissive: 0x0284c7,
                 emissiveIntensity: 0.7,
-                roughness: 0.1,
-                metalness: 0.2
+                roughness: 0.15
             });
-            const permataGeo = new THREE.OctahedronGeometry(0.32, 0);
 
             for (let i = 0; i < 8; i++) {
-                const pMesh = new THREE.Mesh(permataGeo, permataMat);
-                pMesh.position.set(x3, 1.5, z3);
-                worldGroup.add(pMesh);
+                const m = new THREE.Mesh(permataGeo, permataMat);
+                m.position.set(x3, 1.6, z3);
                 const ang = (i * Math.PI * 2) / 8;
+                worldGroup.add(m);
                 permataList3D.push({
-                    mesh: pMesh,
+                    mesh: m,
                     vx: Math.cos(ang) * 0.08,
-                    vy: 0.18 + Math.random() * 0.08,
+                    vy: 0.16 + Math.random() * 0.08,
                     vz: Math.sin(ang) * 0.08,
                     life: 1.4
                 });
             }
 
             if (!konfetiGeo) {
-                konfetiGeo = new THREE.PlaneGeometry(0.24, 0.14);
-                const warnaKonfeti = [0xfacc15, 0x38bdf8, 0xf472b6, 0x4ade80, 0xfb923c];
-                konfetiMats = warnaKonfeti.map(w => new THREE.MeshBasicMaterial({ color: w, side: THREE.DoubleSide }));
+                konfetiGeo = new THREE.BoxGeometry(0.18, 0.06, 0.18);
+                konfetiMats = [0xef4444, 0xfacc15, 0x3b82f6, 0x10b981, 0xec4899].map(
+                    col => new THREE.MeshBasicMaterial({ color: col })
+                );
             }
 
-            for (let i = 0; i < 36; i++) {
-                const kMesh = new THREE.Mesh(konfetiGeo, konfetiMats[i % konfetiMats.length]);
-                kMesh.position.set(x3, 1.8, z3);
-                worldGroup.add(kMesh);
+            for (let i = 0; i < 24; i++) {
+                const cm = new THREE.Mesh(konfetiGeo, konfetiMats[i % konfetiMats.length]);
+                cm.position.set(x3, 1.8, z3);
+                const ang = Math.random() * Math.PI * 2;
+                const spd = 0.04 + Math.random() * 0.1;
+                worldGroup.add(cm);
                 confettiList3D.push({
-                    mesh: kMesh,
-                    vx: (Math.random() - 0.5) * 0.28,
-                    vy: 0.22 + Math.random() * 0.2,
-                    vz: (Math.random() - 0.5) * 0.28,
-                    rx: Math.random() * 0.2,
-                    ry: Math.random() * 0.2,
-                    life: 1.6
+                    mesh: cm,
+                    vx: Math.cos(ang) * spd,
+                    vy: 0.18 + Math.random() * 0.12,
+                    vz: Math.sin(ang) * spd,
+                    life: 1.8
                 });
             }
-
-            setTimeout(() => {
-                selesaiAnimasiPeti();
-            }, 1350);
         }
 
-        function selesaiAnimasiPeti() {
-            isAnimasiPeti = false;
-            if (treasureChest3D && treasureChest3D.userData.penutupGroup) {
-                treasureChest3D.userData.penutupGroup.rotation.x = 0;
-            }
-
-            indexHarta++;
-            kemaskiniHUD();
-
-            if (indexHarta >= senaraiHarta.length) {
-                gameStarted = false;
-                mainBunyi('menang');
-                const bgMusic = document.getElementById('bg-music');
-                if (bgMusic) bgMusic.pause();
-
-                const totalSec = Math.max(1, Math.floor(masaBermain));
-                const formatMasa = formatMasaSaat(totalSec);
-                const tarikhHariIni = new Date().toLocaleDateString('ms-MY', { day: '2-digit', month: '2-digit', year: 'numeric' });
-
-                const rekodPemenangBaru = {
-                    id: `win_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
-                    nama: namaPemain,
-                    kelas: kelasPemain,
-                    jantina: jantinaPemain,
-                    masaSaat: totalSec,
-                    masaFormat: formatMasa,
-                    diamond: jumlahDiamond,
-                    tarikh: tarikhHariIni
-                };
-                hantarRekodPemenangKeAPI(rekodPemenangBaru);
-
-                let bakiSaatKeluar = 4;
-                const janaTeksMenang = (saat) =>
-                    `Syabas ${namaPemain} (${kelasPemain})!\n\nAnda berjaya membuka kesemua 5 peti harta karun sekolah dan mengumpul 💎 ${jumlahDiamond} Permata dalam masa ⏱️ ${formatMasa}!\n\nCatatan masa anda telah direkodkan ke dalam papan kedudukan.\n\n⏳ Kembali ke menu utama secara automatik dalam ${saat} saat...`;
-
-                tunjukMesej(
-                    "🏆 Tahniah, Pemburu Harta Karun!",
-                    janaTeksMenang(bakiSaatKeluar),
-                    "🏠 Menu Utama Sekarang",
-                    () => {
-                        laksanakanQuitKeMenu();
-                    },
-                    "🏆 Lihat Kedudukan",
-                    () => {
-                        laksanakanQuitKeMenu();
-                        bukaSemakKedudukan();
-                    }
-                );
-
-                clearInterval(autoExitMenuTimer);
-                autoExitMenuTimer = setInterval(() => {
-                    bakiSaatKeluar--;
-                    const msgBodyEl = document.getElementById('msg-body');
-                    if (msgBodyEl && isMessageActive) {
-                        msgBodyEl.innerHTML = escapeHTML(janaTeksMenang(Math.max(0, bakiSaatKeluar))).replace(/\n/g, '<br>');
-                    }
-                    if (bakiSaatKeluar <= 0) {
-                        clearInterval(autoExitMenuTimer);
-                        autoExitMenuTimer = null;
-                        laksanakanQuitKeMenu();
-                    }
-                }, 1000);
-            } else {
-                tunjukMesej(
-                    "✅ Jawapan Tepat! (+10 💎)",
-                    `Hebat! Peti ke-${indexHarta} berjaya dibuka. Baca pembayang pantun seterusnya untuk mencari lokasi peti ke-${indexHarta + 1}!`,
-                    "Teruskan Pencarian",
-                    () => {
-                        kemaskiniPosisiPeti3D();
-                        kemaskiniPembayang();
-                    }
-                );
-            }
-        }
-
-        function semakJawapanKuiz(pilihanIdx, masaTamat = false) {
-            clearInterval(quizTimerInterval);
-            document.getElementById('quiz-screen').classList.add('hidden');
-            isQuizActive = false;
+        function bukaKuizHartaKarun() {
+            if (indexHarta >= senaraiHarta.length) return;
+            isQuizActive = true;
+            masaKuiz = 20;
 
             const h = senaraiHarta[indexHarta];
-            const skema = SKEMA_JAWAPAN_BM[h.soalanId];
-            const jawapanSah = h.jawapan;
+            const quizScreen = document.getElementById('quiz-screen');
+            const timerEl = document.getElementById('quiz-timer');
+            const qEl = document.getElementById('quiz-question');
+            const optContainer = document.getElementById('quiz-options');
 
-            if (!masaTamat && pilihanIdx === jawapanSah) {
-                jumlahDiamond += 10;
+            timerEl.textContent = `⏳ Masa: ${masaKuiz}s`;
+            qEl.textContent = `Peti #${indexHarta + 1}: ${h.soalan}`;
+            optContainer.innerHTML = '';
+
+            const huruf = ['A', 'B', 'C', 'D'];
+            h.pilihan.forEach((teksPilihan, idx) => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'quiz-btn';
+                btn.textContent = `${huruf[idx]}. ${teksPilihan}`;
+                btn.onclick = () => prosesJawapanKuiz(idx);
+                optContainer.appendChild(btn);
+            });
+
+            quizScreen.classList.remove('hidden');
+
+            clearInterval(quizTimerInterval);
+            quizTimerInterval = setInterval(() => {
+                if (isPaused) return;
+                masaKuiz--;
+                timerEl.textContent = `⏳ Masa: ${Math.max(0, masaKuiz)}s`;
+                if (masaKuiz <= 0) {
+                    clearInterval(quizTimerInterval);
+                    prosesJawapanKuiz(-1);
+                }
+            }, 1000);
+        }
+
+        function prosesJawapanKuiz(pilihanIndex) {
+            if (!isQuizActive) return;
+            clearInterval(quizTimerInterval);
+            quizTimerInterval = null;
+            isQuizActive = false;
+
+            document.getElementById('quiz-screen').classList.add('hidden');
+
+            const h = senaraiHarta[indexHarta];
+            const skema = SKEMA_JAWAPAN_BM[h.soalanId] || { tajuk: "Tatabahasa", ulasan: "Teruskan usaha anda!" };
+            const jawapanBetulTeks = h.pilihan[h.jawapan];
+
+            if (pilihanIndex === h.jawapan) {
                 mainBunyi('betul');
-                lancarkanAnimasiBukaPeti();
-            } else {
-                nyawa--;
-                screenShake = 14;
-                mainBunyi('salah');
+                const bonusPantas = masaKuiz >= 10 ? 5 : 0;
+                const ganjaran = 20 + bonusPantas;
+                jumlahDiamond += ganjaran;
+                indexHarta++;
                 kemaskiniHUD();
 
-                const flash = document.getElementById('damage-flash');
-                flash.style.opacity = '1';
-                setTimeout(() => (flash.style.opacity = '0'), 260);
+                const ulasanHTML = `
+                    <div style="background:#ecfdf5; border:1.5px solid #6ee7b7; border-radius:12px; padding:10px; margin-bottom:8px; text-align:left;">
+                        <div style="font-weight:800; color:#047857; margin-bottom:4px;">✅ Jawapan Tepat! (+${ganjaran} 💎)</div>
+                        <div style="font-size:0.82rem; color:#065f46;"><b>Topik (${escapeHTML(skema.tajuk)}):</b> ${escapeHTML(skema.ulasan)}</div>
+                    </div>
+                `;
 
-                if (nyawa === 1) {
+                if (indexHarta >= senaraiHarta.length) {
+                    tamatPermainan(true, ulasanHTML);
+                } else {
+                    kemaskiniPembayang();
+                    kemaskiniPosisiPeti3D();
+                    paparMesej(
+                        `🎉 Peti #${indexHarta} Berjaya Dibuka!`,
+                        `${ulasanHTML}Seterusnya, cari <b>Peti #${indexHarta + 1}</b> berpandukan pembayang pantun baharu di bahagian bawah skrin.`,
+                        "Teruskan Pencarian"
+                    );
+                }
+            } else {
+                mainBunyi('salah');
+                nyawa = Math.max(0, nyawa - 1);
+                player.invulnerable = 2.0;
+                kemaskiniHUD();
+
+                // Tutup semula peti dan tolak pemain sedikit supaya tidak terus mencetuskan peti serta-merta
+                if (treasureChest3D && treasureChest3D.userData.penutupGroup) {
+                    treasureChest3D.userData.penutupGroup.rotation.x = 0;
+                }
+                const dx = player.x - h.x;
+                const dy = player.y - h.y;
+                const dist = Math.hypot(dx, dy) || 1;
+                const undurX = player.x + (dx / dist) * 32;
+                const undurY = player.y + (dy / dist) * 32;
+                if (!semakPelanggaran(undurX, undurY, player.radius)) {
+                    player.x = undurX;
+                    player.y = undurY;
+                }
+
+                if (nyawa === 1 && senaraiNyawaTerapung.length === 0) {
                     spawnNyawaTerapung3D();
                 }
 
+                const sebab = pilihanIndex === -1 ? "⏰ Masa menjawab telah tamat!" : "❌ Jawapan kurang tepat!";
+                const ulasanSalahHTML = `
+                    <div style="background:#fef2f2; border:1.5px solid #fca5a5; border-radius:12px; padding:10px; margin-bottom:8px; text-align:left;">
+                        <div style="font-weight:800; color:#b91c1c; margin-bottom:4px;">${sebab} (-1 ❤️)</div>
+                        <div style="font-size:0.82rem; color:#7f1d1d;"><b>Jawapan Sebenar:</b> ${escapeHTML(jawapanBetulTeks)}<br>${escapeHTML(skema.ulasan)}</div>
+                    </div>
+                `;
+
                 if (nyawa <= 0) {
-                    gameStarted = false;
-                    const bgMusic = document.getElementById('bg-music');
-                    if (bgMusic) bgMusic.pause();
-
-                    let bakiSaatKeluar = 4;
-                    const janaTeksTamat = (saat) =>
-                        `${masaTamat ? "Masa menjawab soalan telah tamat dan nyawa anda telah habis!" : "Jawapan kurang tepat dan nyawa anda telah habis! Jangan putus asa, cuba lagi."}\n\n⏳ Kembali ke menu utama secara automatik dalam ${saat} saat...`;
-
-                    tunjukMesej(
-                        "💔 Misi Gagal!",
-                        janaTeksTamat(bakiSaatKeluar),
-                        "🏠 Menu Utama Sekarang",
-                        () => {
-                            laksanakanQuitKeMenu();
-                        }
-                    );
-
-                    clearInterval(autoExitMenuTimer);
-                    autoExitMenuTimer = setInterval(() => {
-                        bakiSaatKeluar--;
-                        const msgBodyEl = document.getElementById('msg-body');
-                        if (msgBodyEl && isMessageActive) {
-                            msgBodyEl.innerHTML = escapeHTML(janaTeksTamat(Math.max(0, bakiSaatKeluar))).replace(/\n/g, '<br>');
-                        }
-                        if (bakiSaatKeluar <= 0) {
-                            clearInterval(autoExitMenuTimer);
-                            autoExitMenuTimer = null;
-                            laksanakanQuitKeMenu();
-                        }
-                    }, 1000);
+                    tamatPermainan(false, ulasanSalahHTML);
                 } else {
-                    player.x = titikMulaPemain.x;
-                    player.y = titikMulaPemain.y;
-                    player.invulnerable = 120;
-
-                    const infoBonusNyawa = nyawa === 1
-                        ? `\n\n💖 Amaran Nyawa Terakhir! 2 Emoji Nyawa (❤️) kini muncul terapung di lorong jauh — kutip terus untuk tambah nyawa!`
-                        : '';
-
-                    tunjukMesej(
-                        masaTamat ? "⏰ Masa Tamat! (-1 ❤️)" : "❌ Kurang Tepat! (-1 ❤️)",
-                        `${skema ? `Tip Bahasa (${skema.tajuk}): ${skema.ulasan}` : "Sila semak semula tatabahasa Bahasa Melayu anda."} Anda dikembalikan ke titik permulaan.${infoBonusNyawa}`,
-                        "Cuba Lagi",
-                        () => {}
+                    paparMesej(
+                        "⚠️ Cuba Lagi!",
+                        `${ulasanSalahHTML}${nyawa === 1 ? '💡 <b>Tip:</b> Nyawa tinggal 1! Cari <b>2 Emoji Nyawa (❤️)</b> yang muncul di lorong jauh!' : 'Hampiri semula peti harta karun apabila sudah bersedia.'}`,
+                        "Faham & Teruskan"
                     );
                 }
             }
         }
 
-        function tunjukMesej(tajuk, isi, teksButang, callback, teksButangKedua = null, callbackKedua = null) {
-            isMessageActive = true;
-            document.getElementById('msg-title').textContent = tajuk;
-            document.getElementById('msg-body').innerHTML = escapeHTML(isi).replace(/\n/g, '<br>');
+        function tamatPermainan(menang, ringkasanAkhirHTML = "") {
+            gameStarted = false;
+            const bgMusic = document.getElementById('bg-music');
+            if (bgMusic) {
+                bgMusic.pause();
+                bgMusic.currentTime = 0;
+            }
 
-            const btn = document.getElementById('msg-btn');
-            btn.textContent = teksButang;
-            btn.onclick = () => {
-                document.getElementById('message-screen').classList.add('hidden');
-                isMessageActive = false;
-                if (callback) callback();
-            };
+            document.getElementById('joystick-zone').style.display = 'none';
+            document.getElementById('clue-box').classList.add('hidden');
 
-            const btn2 = document.getElementById('msg-btn-secondary');
-            if (btn2) {
-                if (teksButangKedua) {
-                    btn2.textContent = teksButangKedua;
-                    btn2.classList.remove('hidden');
-                    btn2.onclick = () => {
+            const masaTamatSaat = Math.max(1, Math.round(masaBermain));
+            const masaTamatFormat = formatMasaSaat(masaTamatSaat);
+
+            if (menang) {
+                mainBunyi('menang');
+                const tarikhHariIni = new Date().toLocaleDateString('ms-MY', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                });
+                const rekodBaharu = {
+                    id: `rec_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+                    nama: namaPemain,
+                    kelas: kelasPemain,
+                    jantina: jantinaPemain,
+                    masaSaat: masaTamatSaat,
+                    masaFormat: masaTamatFormat,
+                    diamond: jumlahDiamond,
+                    tarikh: tarikhHariIni
+                };
+                hantarRekodPemenangKeAPI(rekodBaharu);
+
+                const isiMenang = `
+                    ${ringkasanAkhirHTML}
+                    <div style="background:#fffbeb; border:2px solid #f59e0b; border-radius:12px; padding:10px; margin-bottom:8px;">
+                        <div style="font-size:0.95rem; font-weight:900; color:#b45309;">🏆 SYABAS, ${escapeHTML(namaPemain.toUpperCase())}!</div>
+                        <div style="font-size:0.82rem; color:#78350f; margin-top:4px;">
+                            🏫 Kelas: <b>${escapeHTML(kelasPemain)}</b><br>
+                            ⏱️ Catatan Masa: <b>${masaTamatFormat}</b><br>
+                            💎 Jumlah Permata: <b>${jumlahDiamond}</b>
+                        </div>
+                    </div>
+                    <div style="font-size:0.78rem; color:#475569;">Rekod anda telah dihantar ke Papan Kedudukan Top 10!</div>
+                `;
+
+                paparMesej(
+                    "🎊 MISI BERJAYA!",
+                    isiMenang,
+                    "🏆 Lihat Kedudukan Top 10",
+                    () => {
+                        kembaliKeMenuUtama();
+                        bukaSemakKedudukan();
+                    },
+                    "🏠 Menu Utama",
+                    () => {
+                        kembaliKeMenuUtama();
+                    }
+                );
+            } else {
+                const isiKalah = `
+                    ${ringkasanAkhirHTML}
+                    <div style="background:#f8fafc; border:1.5px solid #cbd5e1; border-radius:12px; padding:10px; margin-bottom:8px; font-size:0.83rem; color:#334155;">
+                        Jangan berputus asa, <b>${escapeHTML(namaPemain)}</b>!<br>
+                        🧰 Peti Berjaya Dibuka: <b>${indexHarta}/${senaraiHarta.length}</b> • 💎 Permata: <b>${jumlahDiamond}</b>
+                    </div>
+                `;
+                paparMesej(
+                    "💔 Nyawa Telah Habis",
+                    isiKalah,
+                    "🔄 Cuba Semula",
+                    () => {
                         document.getElementById('message-screen').classList.add('hidden');
                         isMessageActive = false;
-                        if (callbackKedua) callbackKedua();
-                    };
-                } else {
-                    btn2.classList.add('hidden');
-                    btn2.onclick = null;
-                }
+                        mulakanPermainan();
+                    },
+                    "🏠 Menu Utama",
+                    () => {
+                        kembaliKeMenuUtama();
+                    }
+                );
             }
-
-            document.getElementById('message-screen').classList.remove('hidden');
         }
 
         // =========================================================================
-        // 10. KAWALAN INPUT (KEYBOARD, JOYSTICK & SLIDE SKRIN FPV)
+        // 11. KAWALAN INPUT (KEYBOARD, JOYSTICK SENTUH, SERET KAMERA & KLIK LANTAI)
         // =========================================================================
-        const keys = {};
-        window.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && gameStarted && !isQuizActive && !isMessageActive && !isAnimasiPeti) {
-                togolPausePermainan();
-                return;
-            }
-            keys[e.key.toLowerCase()] = true;
-            if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' '].includes(e.key.toLowerCase())) {
-                if (gameStarted && !isPaused && !isQuizActive && !isMessageActive) e.preventDefault();
-            }
-        });
-        window.addEventListener('keyup', (e) => {
-            keys[e.key.toLowerCase()] = false;
-        });
-
-        function tukarModKamera() {
-            mainBunyi('klik');
-            if (cameraMode === 'topdown') {
-                cameraMode = 'chase';
-                cameraYaw = player.angle + Math.PI;
-                cameraPitch = 0;
-                cameraZoom = 1.0;
-                document.getElementById('btn-kamera').textContent = '📷';
-                tunjukToastSuasana('📷 Mod Kamera Belakang Watak (FPV): Seret jari (touch slide) pada skrin untuk menukar haluan pandangan.');
-            } else {
-                cameraMode = 'topdown';
-                cameraZoom = 1.0;
-                document.getElementById('btn-kamera').textContent = '🎥';
-                tunjukToastSuasana('🎥 Mod Kamera Pandangan Atas 3D.');
-            }
-        }
+        const keysPressed = {};
 
         function setupKawalanInput3D() {
-            const canvas = renderer.domElement;
-            let activePointers = new Map();
-            let isDragging = false;
-            let dragMoved = false;
-            let lastX = 0;
-            let lastY = 0;
-            let initialPinchDist = null;
-            let initialZoom = 1.0;
-
-            canvas.addEventListener('pointerdown', (e) => {
-                if (!gameStarted || isPaused || isQuizActive || isMessageActive || isAnimasiPeti) return;
-
-                // Abaikan sentuhan di sekitar zon keselamatan joystick kiri-bawah supaya kamera tidak berpusing tidak sengaja
-                if (joyZone && joyZone.style.display !== 'none') {
-                    const jRect = joyZone.getBoundingClientRect();
-                    if (
-                        e.clientX >= jRect.left - 32 &&
-                        e.clientX <= jRect.right + 32 &&
-                        e.clientY >= jRect.top - 32 &&
-                        e.clientY <= jRect.bottom + 32
-                    ) {
-                        return;
-                    }
-                }
-
-                activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-
-                if (activePointers.size === 1) {
-                    isDragging = true;
-                    dragMoved = false;
-                    lastX = e.clientX;
-                    lastY = e.clientY;
-                } else if (activePointers.size === 2) {
-                    isDragging = false;
-                    const pts = Array.from(activePointers.values());
-                    initialPinchDist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
-                    initialZoom = cameraZoom;
+            window.addEventListener('keydown', (e) => {
+                keysPressed[e.key.toLowerCase()] = true;
+                if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' '].includes(e.key.toLowerCase()) && gameStarted && !isQuizActive && !isMessageActive) {
+                    e.preventDefault();
                 }
             });
 
-            canvas.addEventListener('pointermove', (e) => {
-                if (!activePointers.has(e.pointerId)) return;
-                activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-
-                if (activePointers.size === 2 && initialPinchDist) {
-                    const pts = Array.from(activePointers.values());
-                    const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
-                    if (dist > 10) {
-                        cameraZoom = Math.max(0.65, Math.min(1.65, initialZoom * (initialPinchDist / dist)));
-                    }
-                    return;
-                }
-
-                if (isDragging && activePointers.size === 1) {
-                    const dx = e.clientX - lastX;
-                    const dy = e.clientY - lastY;
-                    if (Math.hypot(dx, dy) > 4) dragMoved = true;
-
-                    if (cameraMode === 'chase') {
-                        cameraYaw -= dx * 0.0075;
-                        cameraPitch = Math.max(-0.35, Math.min(0.65, cameraPitch + dy * 0.005));
-                    }
-                    lastX = e.clientX;
-                    lastY = e.clientY;
-                }
+            window.addEventListener('keyup', (e) => {
+                keysPressed[e.key.toLowerCase()] = false;
             });
 
-            const tamatPointer = (e) => {
-                if (activePointers.has(e.pointerId)) {
-                    if (activePointers.size === 1 && isDragging && !dragMoved && cameraMode === 'topdown' && gameStarted && !isPaused && !isQuizActive && !isMessageActive && !isAnimasiPeti) {
-                        const rect = canvas.getBoundingClientRect();
-                        mouseVec.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-                        mouseVec.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
-                        raycaster.setFromCamera(mouseVec, camera3D);
+            // Kawalan Virtual Joystick
+            const joyZone = document.getElementById('joystick-zone');
+            const joyKnob = document.getElementById('joystick-knob');
+            const maxRadius = 42;
 
-                        const hits = raycaster.intersectObject(groundPlaneMesh);
-                        if (hits.length > 0) {
-                            const pt = hits[0].point;
-                            const tx2d = to2DX(pt.x);
-                            const ty2d = to2DY(pt.z);
-                            if (!semakPelanggaran(tx2d, ty2d, player.radius)) {
-                                player.targetX = tx2d;
-                                player.targetY = ty2d;
-                                player.targetRun = Math.hypot(tx2d - player.x, ty2d - player.y) > 220;
-                                if (targetRing3D) {
-                                    targetRing3D.position.set(pt.x, 0.08, pt.z);
-                                    targetRing3D.visible = true;
-                                }
-                            }
-                        }
-                    }
-                    activePointers.delete(e.pointerId);
+            function kemaskiniJoystick(clientX, clientY) {
+                const rect = joyZone.getBoundingClientRect();
+                const centerX = rect.left + rect.width / 2;
+                const centerY = rect.top + rect.height / 2;
+                let dx = clientX - centerX;
+                let dy = clientY - centerY;
+                const dist = Math.hypot(dx, dy);
+
+                if (dist > maxRadius) {
+                    dx = (dx / dist) * maxRadius;
+                    dy = (dy / dist) * maxRadius;
                 }
-                if (activePointers.size < 2) initialPinchDist = null;
-                if (activePointers.size === 0) isDragging = false;
-            };
 
-            canvas.addEventListener('pointerup', tamatPointer);
-            canvas.addEventListener('pointercancel', tamatPointer);
+                joyKnob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+                joystickData.vecX = dx / maxRadius;
+                joystickData.vecY = dy / maxRadius;
+                player.targetX = null;
+                player.targetY = null;
+                if (targetRing3D) targetRing3D.visible = false;
+            }
 
-            canvas.addEventListener('wheel', (e) => {
-                if (!gameStarted || isPaused) return;
+            joyZone.addEventListener('touchstart', (e) => {
                 e.preventDefault();
-                cameraZoom = Math.max(0.65, Math.min(1.65, cameraZoom + e.deltaY * 0.0008));
+                e.stopPropagation();
+                if (joystickData.touchId !== null) return;
+                const touch = e.changedTouches[0];
+                joystickData.touchId = touch.identifier;
+                joystickData.active = true;
+                joyZone.classList.add('active');
+                kemaskiniJoystick(touch.clientX, touch.clientY);
             }, { passive: false });
+
+            joyZone.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (!joystickData.active) return;
+                for (let i = 0; i < e.changedTouches.length; i++) {
+                    const t = e.changedTouches[i];
+                    if (t.identifier === joystickData.touchId) {
+                        kemaskiniJoystick(t.clientX, t.clientY);
+                        break;
+                    }
+                }
+            }, { passive: false });
+
+            const resetJoystick = (e) => {
+                if (!joystickData.active) return;
+                for (let i = 0; i < e.changedTouches.length; i++) {
+                    if (e.changedTouches[i].identifier === joystickData.touchId) {
+                        joystickData.active = false;
+                        joystickData.touchId = null;
+                        joystickData.vecX = 0;
+                        joystickData.vecY = 0;
+                        joyZone.classList.remove('active');
+                        joyKnob.style.transform = 'translate(-50%, -50%)';
+                        break;
+                    }
+                }
+            };
+            joyZone.addEventListener('touchend', resetJoystick);
+            joyZone.addEventListener('touchcancel', resetJoystick);
+
+            // Kawalan Seret Skrin (Putar Kamera) & Klik/Sentuh Lantai untuk Bergerak
+            const webglEl = document.getElementById('webgl-container');
+            let isDraggingCam = false;
+            let dragMoved = false;
+            let prevPointerX = 0;
+            let prevPointerY = 0;
+            let camTouchId = null;
+
+            webglEl.addEventListener('mousedown', (e) => {
+                if (!gameStarted || isPaused || isQuizActive || isMessageActive) return;
+                isDraggingCam = true;
+                dragMoved = false;
+                prevPointerX = e.clientX;
+                prevPointerY = e.clientY;
+            });
+
+            window.addEventListener('mousemove', (e) => {
+                if (!isDraggingCam) return;
+                const dx = e.clientX - prevPointerX;
+                const dy = e.clientY - prevPointerY;
+                if (Math.hypot(dx, dy) > 4) dragMoved = true;
+                prevPointerX = e.clientX;
+                prevPointerY = e.clientY;
+
+                cameraYaw -= dx * 0.0065;
+                cameraPitch = Math.max(-0.35, Math.min(0.45, cameraPitch + dy * 0.0045));
+            });
+
+            window.addEventListener('mouseup', (e) => {
+                if (!isDraggingCam) return;
+                isDraggingCam = false;
+                if (!dragMoved && gameStarted && !isPaused && !isQuizActive && !isMessageActive && !isAnimasiPeti) {
+                    tetapkanSasaranKlik3D(e.clientX, e.clientY, e.detail >= 2);
+                }
+            });
+
+            webglEl.addEventListener('wheel', (e) => {
+                if (!gameStarted) return;
+                cameraZoom = Math.max(0.65, Math.min(1.65, cameraZoom + e.deltaY * 0.0008));
+            }, { passive: true });
+
+            webglEl.addEventListener('touchstart', (e) => {
+                if (!gameStarted || isPaused || isQuizActive || isMessageActive) return;
+                if (camTouchId !== null) return;
+                const t = e.changedTouches[0];
+                camTouchId = t.identifier;
+                dragMoved = false;
+                prevPointerX = t.clientX;
+                prevPointerY = t.clientY;
+            }, { passive: true });
+
+            webglEl.addEventListener('touchmove', (e) => {
+                if (camTouchId === null) return;
+                for (let i = 0; i < e.changedTouches.length; i++) {
+                    const t = e.changedTouches[i];
+                    if (t.identifier === camTouchId) {
+                        const dx = t.clientX - prevPointerX;
+                        const dy = t.clientY - prevPointerY;
+                        if (Math.hypot(dx, dy) > 5) dragMoved = true;
+                        prevPointerX = t.clientX;
+                        prevPointerY = t.clientY;
+
+                        cameraYaw -= dx * 0.0075;
+                        cameraPitch = Math.max(-0.35, Math.min(0.45, cameraPitch + dy * 0.0045));
+                        break;
+                    }
+                }
+            }, { passive: true });
+
+            webglEl.addEventListener('touchend', (e) => {
+                if (camTouchId === null) return;
+                for (let i = 0; i < e.changedTouches.length; i++) {
+                    const t = e.changedTouches[i];
+                    if (t.identifier === camTouchId) {
+                        camTouchId = null;
+                        if (!dragMoved && cameraMode === 'top' && gameStarted && !isPaused && !isQuizActive && !isMessageActive && !isAnimasiPeti) {
+                            tetapkanSasaranKlik3D(t.clientX, t.clientY, false);
+                        }
+                        break;
+                    }
+                }
+            });
         }
 
-        const joyZone = document.getElementById('joystick-zone');
-        const joyKnob = document.getElementById('joystick-knob');
+        function tetapkanSasaranKlik3D(clientX, clientY, lari) {
+            if (!renderer || !camera3D || !groundPlaneMesh) return;
+            const rect = renderer.domElement.getBoundingClientRect();
+            mouseVec.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+            mouseVec.y = -((clientY - rect.top) / rect.height) * 2 + 1;
 
-        function interpolasiSudut(sudutSemasa, sudutSasaran, faktor) {
-            let beza = sudutSasaran - sudutSemasa;
-            while (beza > Math.PI) beza -= Math.PI * 2;
-            while (beza < -Math.PI) beza += Math.PI * 2;
-            return sudutSemasa + beza * faktor;
-        }
-
-        function kemaskiniJoystick(clientX, clientY) {
-            const rect = joyZone.getBoundingClientRect();
-            const centerX = rect.left + rect.width / 2;
-            const centerY = rect.top + rect.height / 2;
-            const maxDist = rect.width / 2 - 14;
-
-            let dx = clientX - centerX;
-            let dy = clientY - centerY;
-            const dist = Math.hypot(dx, dy);
-
-            if (dist > maxDist) {
-                dx = (dx / dist) * maxDist;
-                dy = (dy / dist) * maxDist;
-            }
-
-            joyKnob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
-
-            const rawX = dx / maxDist;
-            const rawY = dy / maxDist;
-            const rawMag = Math.hypot(rawX, rawY);
-            const deadzone = 0.14;
-
-            if (rawMag < deadzone) {
-                joystickData.vecX = 0;
-                joystickData.vecY = 0;
-            } else {
-                const skala = Math.min(1, (rawMag - deadzone) / (1 - deadzone));
-                joystickData.vecX = (rawX / rawMag) * skala;
-                joystickData.vecY = (rawY / rawMag) * skala;
-            }
-        }
-
-        joyZone.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            if (isPaused) return;
-            const touch = e.changedTouches[0];
-            joystickData.active = true;
-            joystickData.touchId = touch.identifier;
-            joyZone.classList.add('active');
-            player.targetX = null;
-            player.targetY = null;
-            if (targetRing3D) targetRing3D.visible = false;
-            kemaskiniJoystick(touch.clientX, touch.clientY);
-        }, { passive: false });
-
-        joyZone.addEventListener('touchmove', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            if (!joystickData.active || isPaused) return;
-            for (let i = 0; i < e.changedTouches.length; i++) {
-                if (e.changedTouches[i].identifier === joystickData.touchId) {
-                    kemaskiniJoystick(e.changedTouches[i].clientX, e.changedTouches[i].clientY);
-                    break;
+            raycaster.setFromCamera(mouseVec, camera3D);
+            const hits = raycaster.intersectObject(groundPlaneMesh);
+            if (hits.length > 0) {
+                const pt = hits[0].point;
+                const tx = to2DX(pt.x);
+                const ty = to2DY(pt.z);
+                if (!semakPelanggaran(tx, ty, player.radius)) {
+                    player.targetX = tx;
+                    player.targetY = ty;
+                    player.targetRun = lari;
+                    if (targetRing3D) {
+                        targetRing3D.position.set(pt.x, 0.08, pt.z);
+                        targetRing3D.visible = true;
+                    }
                 }
             }
-        }, { passive: false });
-
-        function tamatJoystick(e) {
-            for (let i = 0; i < e.changedTouches.length; i++) {
-                if (e.changedTouches[i].identifier === joystickData.touchId) {
-                    joystickData.active = false;
-                    joystickData.vecX = 0;
-                    joystickData.vecY = 0;
-                    joystickData.touchId = null;
-                    joyZone.classList.remove('active');
-                    joyKnob.style.transform = `translate(-50%, -50%)`;
-                    break;
-                }
-            }
         }
-        joyZone.addEventListener('touchend', tamatJoystick);
-        joyZone.addEventListener('touchcancel', tamatJoystick);
 
         // =========================================================================
-        // 11. KEMASKINI LOGIK PERMAINAN & VISUAL 3D (60 FPS)
+        // 12. KEMASKINI LOGIK PERGERAKAN, ZOMBIE, NYAWA, SUASANA & KAMERA
         // =========================================================================
-        function spawnDebuTapakKaki(x3, z3) {
+        function lahirkanDebuLangkah(x3, z3) {
             if (dustPool.length === 0) return;
-            const item = dustPool[dustIndex % dustPool.length];
-            dustIndex++;
-            item.mesh.position.set(x3 + (Math.random() - 0.5) * 0.4, 0.14, z3 + (Math.random() - 0.5) * 0.4);
-            item.mesh.scale.setScalar(0.6);
+            const item = dustPool[dustIndex];
+            dustIndex = (dustIndex + 1) % dustPool.length;
+            item.mesh.position.set(x3 + (Math.random() - 0.5) * 0.4, 0.16, z3 + (Math.random() - 0.5) * 0.4);
+            item.mesh.scale.setScalar(1);
             item.mesh.visible = true;
             item.life = 0.45;
         }
 
-        function kemaskiniPermainan(dt) {
-            if (!gameStarted || isPaused || isQuizActive || isMessageActive || isAnimasiPeti) return;
-
-            masaBermain += dt;
-            const currentSec = Math.floor(masaBermain);
-            if (currentSec !== lastTimerSec) {
-                lastTimerSec = currentSec;
-                const min = Math.floor(currentSec / 60);
-                const sec = currentSec % 60;
-                document.getElementById('hud-timer').textContent = `⏱️ ${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
+        function kemaskiniPemain(dt) {
+            if (player.invulnerable > 0) {
+                player.invulnerable = Math.max(0, player.invulnerable - dt);
+                if (playerGroup3D) {
+                    playerGroup3D.visible = Math.floor(player.invulnerable * 14) % 2 === 0;
+                }
+            } else if (playerGroup3D) {
+                playerGroup3D.visible = true;
             }
 
-            pemasaSuasana -= dt;
-            if (pemasaSuasana <= 0) togolSuasanaSiangSenja();
-            const targetSenja = modSuasana === 'senja' ? 1 : 0;
-            faktorSenja += (targetSenja - faktorSenja) * Math.min(1, dt * 0.6);
+            if (isQuizActive || isMessageActive || isAnimasiPeti) {
+                isMoving = false;
+                return;
+            }
 
             let inputX = 0;
             let inputY = 0;
-            let mahuLari = keys['shift'] || false;
+            let mahuLari = Boolean(keysPressed['shift']);
 
-            if (keys['w'] || keys['arrowup']) inputY -= 1;
-            if (keys['s'] || keys['arrowdown']) inputY += 1;
-            if (keys['a'] || keys['arrowleft']) inputX -= 1;
-            if (keys['d'] || keys['arrowright']) inputX += 1;
+            if (keysPressed['w'] || keysPressed['arrowup']) inputY -= 1;
+            if (keysPressed['s'] || keysPressed['arrowdown']) inputY += 1;
+            if (keysPressed['a'] || keysPressed['arrowleft']) inputX -= 1;
+            if (keysPressed['d'] || keysPressed['arrowright']) inputX += 1;
 
             if (joystickData.active) {
                 inputX = joystickData.vecX;
                 inputY = joystickData.vecY;
-                if (Math.hypot(inputX, inputY) > 0.72) mahuLari = true;
+                const magJoy = Math.hypot(inputX, inputY);
+                if (magJoy > 0.78) mahuLari = true;
             }
 
-            let moveX = inputX;
-            let moveY = inputY;
+            let moveX = 0;
+            let moveY = 0;
 
-            if (cameraMode === 'chase' && (Math.abs(inputX) > 0.05 || Math.abs(inputY) > 0.05)) {
-                const forwardX = -Math.sin(cameraYaw);
-                const forwardY = -Math.cos(cameraYaw);
-                const rightX = Math.cos(cameraYaw);
-                const rightY = -Math.sin(cameraYaw);
-                const maju = -inputY;
-                const sisi = inputX;
-                moveX = forwardX * maju + rightX * sisi;
-                moveY = forwardY * maju + rightY * sisi;
-            }
-
-            const mag = Math.hypot(moveX, moveY);
-            if (mag > 0.05) {
+            if (Math.hypot(inputX, inputY) > 0.08) {
                 player.targetX = null;
                 player.targetY = null;
                 if (targetRing3D) targetRing3D.visible = false;
 
-                const normX = moveX / Math.max(1, mag);
-                const normY = moveY / Math.max(1, mag);
-                const kelajuanDasar = mahuLari ? player.runSpeed : player.walkSpeed;
-                const faktorKekuatan = joystickData.active ? Math.max(0.45, Math.min(1, mag)) : 1;
-                const kelajuan = kelajuanDasar * faktorKekuatan * (dt * 60);
+                const mag = Math.hypot(inputX, inputY);
+                const nx = inputX / Math.max(1, mag);
+                const ny = inputY / Math.max(1, mag);
 
-                const nextX = player.x + normX * kelajuan;
-                const nextY = player.y + normY * kelajuan;
+                if (cameraMode === 'chase') {
+                    // Selarikan arah pergerakan dengan haluan pandangan kamera semasa
+                    const forwardX = -Math.sin(cameraYaw);
+                    const forwardY = -Math.cos(cameraYaw);
+                    const rightX = Math.cos(cameraYaw);
+                    const rightY = -Math.sin(cameraYaw);
 
-                if (!semakPelanggaran(nextX, player.y, player.radius)) player.x = nextX;
-                if (!semakPelanggaran(player.x, nextY, player.radius)) player.y = nextY;
-
-                const sudutSasaran = Math.atan2(normX, normY);
-                player.angle = interpolasiSudut(player.angle, sudutSasaran, Math.min(1, dt * 16));
-                isMoving = true;
-                isRunning = mahuLari;
+                    moveX = rightX * nx + forwardX * (-ny);
+                    moveY = rightY * nx + forwardY * (-ny);
+                } else {
+                    moveX = nx;
+                    moveY = ny;
+                }
             } else if (player.targetX !== null && player.targetY !== null) {
                 const dx = player.targetX - player.x;
                 const dy = player.targetY - player.y;
                 const dist = Math.hypot(dx, dy);
-
-                if (dist > 6) {
-                    const kelajuan = (player.targetRun ? player.runSpeed : player.walkSpeed) * (dt * 60);
-                    const vx = (dx / dist) * kelajuan;
-                    const vy = (dy / dist) * kelajuan;
-                    let bergerak = false;
-
-                    if (!semakPelanggaran(player.x + vx, player.y, player.radius)) {
-                        player.x += vx;
-                        bergerak = true;
-                    }
-                    if (!semakPelanggaran(player.x, player.y + vy, player.radius)) {
-                        player.y += vy;
-                        bergerak = true;
-                    }
-
-                    if (bergerak) {
-                        player.angle = Math.atan2(dx, dy);
-                        isMoving = true;
-                        isRunning = player.targetRun;
-                    } else {
-                        player.targetX = null;
-                        player.targetY = null;
-                        isMoving = false;
-                        if (targetRing3D) targetRing3D.visible = false;
-                    }
+                if (dist > 5) {
+                    moveX = dx / dist;
+                    moveY = dy / dist;
+                    mahuLari = player.targetRun;
                 } else {
                     player.targetX = null;
                     player.targetY = null;
-                    isMoving = false;
                     if (targetRing3D) targetRing3D.visible = false;
+                }
+            }
+
+            const moveMag = Math.hypot(moveX, moveY);
+            if (moveMag > 0.02) {
+                isMoving = true;
+                isRunning = mahuLari;
+                const kelajuan = (isRunning ? player.runSpeed : player.walkSpeed) * (dt * 60);
+                const vx = (moveX / moveMag) * kelajuan;
+                const vy = (moveY / moveMag) * kelajuan;
+
+                // Gelongsor dinding berasingan paksi X dan Y supaya mudah melalui laluan 72-unit & pintu bangunan
+                const nextX = player.x + vx;
+                if (!semakPelanggaran(nextX, player.y, player.radius)) {
+                    player.x = nextX;
+                }
+                const nextY = player.y + vy;
+                if (!semakPelanggaran(player.x, nextY, player.radius)) {
+                    player.y = nextY;
+                }
+
+                // Pusingkan watak menghadap arah pergerakan
+                const targetAngle = Math.atan2(vx, vy);
+                let diff = targetAngle - player.angle;
+                while (diff > Math.PI) diff -= Math.PI * 2;
+                while (diff < -Math.PI) diff += Math.PI * 2;
+                player.angle += diff * Math.min(1, dt * 14);
+
+                player.stepAnim += dt * (isRunning ? 15 : 10);
+                const phase = Math.floor(player.stepAnim / Math.PI);
+                if (phase !== player.lastStepPhase) {
+                    player.lastStepPhase = phase;
+                    mainBunyi('langkah');
+                    lahirkanDebuLangkah(to3DX(player.x), to3DZ(player.y));
                 }
             } else {
                 isMoving = false;
                 isRunning = false;
             }
 
-            if (isMoving) {
-                player.stepAnim += (isRunning ? 0.28 : 0.19) * (dt * 60);
-                const fasaKini = Math.floor(player.stepAnim / Math.PI);
-                if (fasaKini !== player.lastStepPhase) {
-                    player.lastStepPhase = fasaKini;
-                    mainBunyi('langkah');
-                    if (isRunning) spawnDebuTapakKaki(to3DX(player.x), to3DZ(player.y));
-                }
-            } else {
-                player.stepAnim = 0;
-            }
-
-            if (player.invulnerable > 0) player.invulnerable -= dt * 60;
-
-            for (let i = senaraiNyawaTerapung.length - 1; i >= 0; i--) {
-                const item = senaraiNyawaTerapung[i];
-                if (item.collected) continue;
-
-                item.phase += dt * 3.8;
-
-                const kelajuanItem = item.speed * (dt * 60);
-                const nextIx = item.x + item.vx * (dt * 60);
-                const nextIy = item.y + item.vy * (dt * 60);
-
-                if (semakPelanggaran(nextIx, item.y, 16)) {
-                    item.vx = -item.vx;
-                } else {
-                    item.x = nextIx;
-                }
-
-                if (semakPelanggaran(item.x, nextIy, 16)) {
-                    item.vy = -item.vy;
-                } else {
-                    item.y = nextIy;
-                }
-
-                if (Math.random() < 0.015) {
-                    const angBaru = Math.atan2(item.vy, item.vx) + (Math.random() - 0.5) * 1.4;
-                    item.vx = Math.cos(angBaru) * item.speed;
-                    item.vy = Math.sin(angBaru) * item.speed;
-                }
-
-                if (item.group) {
-                    item.group.position.set(to3DX(item.x), 0, to3DZ(item.y));
-                }
-                if (item.sprite) {
-                    item.sprite.position.y = 2.4 + Math.sin(item.phase) * 0.42;
-                }
-                if (item.tapakAura) {
-                    const skalaAura = 1 + Math.sin(item.phase * 1.5) * 0.16;
-                    item.tapakAura.scale.set(skalaAura, skalaAura, 1);
-                }
-
-                if (Math.hypot(player.x - item.x, player.y - item.y) < 34) {
-                    item.collected = true;
-                    if (item.group) worldGroup.remove(item.group);
-                    nyawa = Math.min(3, nyawa + 1);
-                    mainBunyi('nyawa');
-                    kemaskiniHUD();
-                    tunjukToastSuasana(`💖 Hebat! Anda mengutip Emoji Nyawa (+1 ❤️). Nyawa kini: ${nyawa}/3!`);
-                }
-            }
-
-            if (indexHarta < senaraiHarta.length) {
-                const h = senaraiHarta[indexHarta];
-                if (Math.hypot(player.x - h.x, player.y - h.y) < 36) {
-                    bukaKuizHartaKarun();
-                }
-            }
-
-            // Gelombang segi tiga untuk gerakan zigzag tulen setempat sahaja (mudah dijangka & dilepasi)
-            const gelombangZig = (p) => (2 / Math.PI) * Math.asin(Math.sin(p));
-
-            for (let z of senaraiZombie) {
-                z.wobble += 2.0 * dt;
-                z.zigPhase += z.zigSpeed * dt;
-
-                const lon = gelombangZig(z.zigPhase) * z.zigLonAmp;
-                const lat = gelombangZig(z.zigPhase * 2) * z.zigLatAmp * z.zigDir;
-
-                const cosA = Math.cos(z.zigAxisAngle);
-                const sinA = Math.sin(z.zigAxisAngle);
-
-                const targetX = z.homeX + cosA * lon - sinA * lat;
-                const targetY = z.homeY + sinA * lon + cosA * lat;
-
-                let nx = z.x;
-                let ny = z.y;
-
-                if (!semakPelanggaran(targetX, z.y, z.radius + 4)) {
-                    nx = targetX;
-                }
-                if (!semakPelanggaran(nx, targetY, z.radius + 4)) {
-                    ny = targetY;
-                }
-
-                z.vx = nx - z.x;
-                z.vy = ny - z.y;
-                z.x = nx;
-                z.y = ny;
-
-                if (player.invulnerable <= 0 && Math.hypot(player.x - z.x, player.y - z.y) < player.radius + z.radius - 4) {
-                    nyawa--;
-                    player.invulnerable = 135;
-                    screenShake = 16;
-                    mainBunyi('zombie');
-                    kemaskiniHUD();
-
-                    const flash = document.getElementById('damage-flash');
-                    flash.style.opacity = '1';
-                    setTimeout(() => (flash.style.opacity = '0'), 280);
-
-                    if (nyawa === 1) {
-                        spawnNyawaTerapung3D();
-                    }
-
-                    if (nyawa <= 0) {
-                        gameStarted = false;
-                        const bgMusic = document.getElementById('bg-music');
-                        if (bgMusic) bgMusic.pause();
-
-                        let bakiSaatKeluar = 4;
-                        const janaTeksZombie = (saat) =>
-                            `Nyawa anda telah habis setelah bertembung dengan zombie penjaga sekolah! Cuba lagi dengan lebih berhati-hati.\n\n⏳ Kembali ke menu utama secara automatik dalam ${saat} saat...`;
-
-                        tunjukMesej(
-                            "🧟 Ditangkap Zombie!",
-                            janaTeksZombie(bakiSaatKeluar),
-                            "🏠 Menu Utama Sekarang",
-                            () => {
-                                laksanakanQuitKeMenu();
-                            }
-                        );
-
-                        clearInterval(autoExitMenuTimer);
-                        autoExitMenuTimer = setInterval(() => {
-                            bakiSaatKeluar--;
-                            const msgBodyEl = document.getElementById('msg-body');
-                            if (msgBodyEl && isMessageActive) {
-                                msgBodyEl.innerHTML = escapeHTML(janaTeksZombie(Math.max(0, bakiSaatKeluar))).replace(/\n/g, '<br>');
-                            }
-                            if (bakiSaatKeluar <= 0) {
-                                clearInterval(autoExitMenuTimer);
-                                autoExitMenuTimer = null;
-                                laksanakanQuitKeMenu();
-                            }
-                        }, 1000);
-                        return;
-                    } else {
-                        player.x = titikMulaPemain.x;
-                        player.y = titikMulaPemain.y;
-                        player.targetX = null;
-                        player.targetY = null;
-                        if (targetRing3D) targetRing3D.visible = false;
-
-                        const infoBonus = nyawa === 1
-                            ? `\n\n💖 Amaran Nyawa Terakhir! 2 Emoji Nyawa (❤️) kini muncul terapung di lorong jauh — kutip terus untuk tambah nyawa!`
-                            : '';
-
-                        tunjukToastSuasana(
-                            nyawa === 1
-                                ? `🧟 Terserempak Zombie! (-1 ❤️) • 💖 2 Emoji Nyawa (❤️) muncul di lorong jauh!`
-                                : `🧟 Terserempak dengan Zombie! (-1 ❤️) Kembali ke titik mula.`
-                        );
-                        if (infoBonus) {
-                            tunjukMesej(
-                                "🧟 Terserempak Zombie! (-1 ❤️)",
-                                `Anda telah bertembung dengan zombie penjaga sekolah dan dikembalikan ke titik mula.${infoBonus}`,
-                                "Teruskan Misi",
-                                () => {}
-                            );
-                        }
-                    }
-                }
-            }
-        }
-
-        function kemaskiniVisual3D(dt, nowMs) {
-            if (!scene || !camera3D || !renderer) return;
-
-            const skySiang = new THREE.Color(0x7dd3fc);
-            const skySenja = new THREE.Color(0x1e1b4b);
-            const skyKini = skySiang.clone().lerp(skySenja, faktorSenja);
-            scene.background.copy(skyKini);
-            if (scene.fog) scene.fog.color.copy(skyKini);
-
-            if (hemiLight) {
-                hemiLight.intensity = 0.52 - faktorSenja * 0.24;
-            }
-            if (sunLight) {
-                sunLight.intensity = 0.92 - faktorSenja * 0.52;
-                const sunSiang = new THREE.Color(0xfffbeb);
-                const sunSenja = new THREE.Color(0xf97316);
-                sunLight.color.copy(sunSiang).lerp(sunSenja, faktorSenja);
-            }
-
-            const lampGlow = Math.max(0, (faktorSenja - 0.35) * 2.2);
-            for (let m of streetLampBulbs) m.emissiveIntensity = lampGlow;
-            for (let pl of streetPointLights) pl.intensity = lampGlow * 1.15;
-            if (buildingWindowsMat) buildingWindowsMat.emissiveIntensity = lampGlow * 0.7;
-
+            // Kemaskini kedudukan dan animasi anggota LEGO 3D
             if (playerGroup3D) {
                 const px3 = to3DX(player.x);
                 const pz3 = to3DZ(player.y);
                 playerGroup3D.position.set(px3, 0, pz3);
                 playerGroup3D.rotation.y = player.angle;
 
-                if (player.invulnerable > 0) {
-                    playerGroup3D.visible = Math.floor(player.invulnerable / 5) % 2 === 0;
-                } else {
-                    playerGroup3D.visible = true;
-                }
-
-                if (playerLimbs.legL && playerLimbs.legR) {
-                    const ayun = isMoving ? Math.sin(player.stepAnim) * (isRunning ? 0.65 : 0.42) : 0;
-                    playerLimbs.legL.rotation.x = ayun;
-                    playerLimbs.legR.rotation.x = -ayun;
-                    playerLimbs.armL.rotation.x = -ayun * 0.85;
-                    playerLimbs.armR.rotation.x = ayun * 0.85;
-                    playerLimbs.bodyPivot.position.y = 1.38 + (isMoving ? Math.abs(Math.sin(player.stepAnim)) * 0.08 : 0);
-                }
-
-                if (sunLight) {
-                    sunLight.position.set(px3 + 38, 68, pz3 + 34);
-                    sunLight.target.position.set(px3, 0, pz3);
-                }
-
-                const camX = camera3D.position.x;
-                const camZ = camera3D.position.z;
-                for (let occ of buildingRoofOccluders) {
-                    const pemainDiDalam =
-                        px3 > occ.minX - 0.8 && px3 < occ.maxX + 0.8 &&
-                        pz3 > occ.minZ - 0.8 && pz3 < occ.maxZ + 0.8;
-
-                    const dekatSelatanAtauBelakang =
-                        px3 > occ.minX - 1.8 && px3 < occ.maxX + 1.8 &&
-                        pz3 > occ.minZ - 4.8 && pz3 < occ.maxZ + 0.6 &&
-                        camZ > occ.minZ;
-
-                    const tengahX = (occ.minX + occ.maxX) * 0.5;
-                    const tengahZ = (occ.minZ + occ.maxZ) * 0.5;
-                    const minSegX = Math.min(camX, px3);
-                    const maxSegX = Math.max(camX, px3);
-                    const minSegZ = Math.min(camZ, pz3);
-                    const maxSegZ = Math.max(camZ, pz3);
-                    const halangGarisPandang =
-                        tengahX > minSegX - 2.5 && tengahX < maxSegX + 2.5 &&
-                        tengahZ > minSegZ - 2.5 && tengahZ < maxSegZ + 2.5 &&
-                        Math.hypot(px3 - tengahX, pz3 - tengahZ) < 11.5;
-
-                    const perluLutsinar = pemainDiDalam || dekatSelatanAtauBelakang || halangGarisPandang;
-                    const targetAlpha = perluLutsinar ? 0.22 : 1.0;
-
-                    occ.opacity += (targetAlpha - occ.opacity) * Math.min(1, dt * 8);
-                    for (let m of occ.meshes) {
-                        if (m && m.material) {
-                            m.material.opacity = occ.opacity;
-                        }
+                if (playerLimbs.legL) {
+                    if (isMoving) {
+                        const ayun = Math.sin(player.stepAnim) * (isRunning ? 0.72 : 0.48);
+                        playerLimbs.legL.rotation.x = ayun;
+                        playerLimbs.legR.rotation.x = -ayun;
+                        playerLimbs.armL.rotation.x = -ayun * 0.85;
+                        playerLimbs.armR.rotation.x = ayun * 0.85;
+                        playerLimbs.bodyPivot.position.y = 1.38 + Math.abs(Math.cos(player.stepAnim)) * 0.09;
+                    } else {
+                        playerLimbs.legL.rotation.x *= 0.8;
+                        playerLimbs.legR.rotation.x *= 0.8;
+                        playerLimbs.armL.rotation.x *= 0.8;
+                        playerLimbs.armR.rotation.x *= 0.8;
+                        playerLimbs.bodyPivot.position.y = 1.38;
                     }
                 }
             }
 
-            if (treasureChest3D && treasureChest3D.visible) {
-                if (isAnimasiPeti && treasureChest3D.userData.penutupGroup) {
-                    treasureChest3D.userData.penutupGroup.rotation.x = Math.max(
-                        -1.15,
-                        treasureChest3D.userData.penutupGroup.rotation.x - dt * 2.8
-                    );
-                } else {
-                    treasureChest3D.rotation.y = Math.sin(nowMs * 0.002) * 0.22;
+            // Semak jarak dengan peti harta karun aktif
+            if (indexHarta < senaraiHarta.length) {
+                const h = senaraiHarta[indexHarta];
+                const jarakPeti = Math.hypot(player.x - h.x, player.y - h.y);
+                if (jarakPeti < 34) {
+                    mulaAnimasiBukaPeti();
                 }
             }
+        }
 
+        function kemaskiniZombie(dt) {
             for (let zm of zombieMeshes) {
-                zm.mesh.position.set(to3DX(zm.data.x), 0, to3DZ(zm.data.y));
-                if (Math.hypot(zm.data.vx || 0, zm.data.vy || 0) > 0.03) {
-                    zm.mesh.rotation.y = Math.atan2(zm.data.vx, zm.data.vy);
+                const z = zm.data;
+                z.zigPhase += dt * z.zigSpeed * 2.2 * z.zigDir;
+                z.wobble += dt * 6;
+
+                const lonOffset = Math.sin(z.zigPhase) * z.zigLonAmp;
+                const latOffset = Math.sin(z.zigPhase * 2.0) * z.zigLatAmp;
+
+                const cosA = Math.cos(z.zigAxisAngle);
+                const sinA = Math.sin(z.zigAxisAngle);
+
+                const targetX = z.homeX + lonOffset * cosA - latOffset * sinA;
+                const targetY = z.homeY + lonOffset * sinA + latOffset * cosA;
+
+                const dx = targetX - z.x;
+                const dy = targetY - z.y;
+
+                if (!semakPelanggaran(targetX, z.y, z.radius)) z.x = targetX;
+                if (!semakPelanggaran(z.x, targetY, z.radius)) z.y = targetY;
+
+                zm.mesh.position.set(to3DX(z.x), Math.abs(Math.sin(z.wobble)) * 0.08, to3DZ(z.y));
+                if (Math.hypot(dx, dy) > 0.05) {
+                    zm.mesh.rotation.y = Math.atan2(dx, dy);
                 }
-                zm.mesh.rotation.z = Math.sin(zm.data.wobble * 2.2) * 0.09;
+
+                // Semak pelanggaran zombie dengan pemain
+                if (player.invulnerable <= 0 && !isQuizActive && !isMessageActive && !isAnimasiPeti) {
+                    const jarak = Math.hypot(player.x - z.x, player.y - z.y);
+                    if (jarak < player.radius + z.radius) {
+                        mainBunyi('zombie');
+                        nyawa = Math.max(0, nyawa - 1);
+                        player.invulnerable = 2.2;
+                        screenShake = 0.45;
+                        kemaskiniHUD();
+
+                        const flash = document.getElementById('damage-flash');
+                        if (flash) {
+                            flash.style.opacity = '1';
+                            setTimeout(() => { flash.style.opacity = '0'; }, 180);
+                        }
+
+                        if (nyawa === 1 && senaraiNyawaTerapung.length === 0) {
+                            spawnNyawaTerapung3D();
+                            tunjukToastSuasana("❤️ Nyawa tinggal 1! Cari 2 Emoji Nyawa yang terapung di lorong jauh!");
+                        } else if (nyawa > 0) {
+                            tunjukToastSuasana("🧟 Tersentuh Zombie LEGO! Nyawa berkurang 1.");
+                        }
+
+                        if (nyawa <= 0) {
+                            tamatPermainan(false);
+                        }
+                    }
+                }
+            }
+        }
+
+        function kemaskiniNyawaTerapung(dt, elapsed) {
+            for (let i = senaraiNyawaTerapung.length - 1; i >= 0; i--) {
+                const item = senaraiNyawaTerapung[i];
+                if (item.collected) continue;
+
+                const nx = item.x + item.vx * (dt * 60);
+                const ny = item.y + item.vy * (dt * 60);
+
+                if (semakPelanggaran(nx, item.y, 14)) {
+                    item.vx = -item.vx;
+                } else {
+                    item.x = nx;
+                }
+
+                if (semakPelanggaran(item.x, ny, 14)) {
+                    item.vy = -item.vy;
+                } else {
+                    item.y = ny;
+                }
+
+                item.group.position.set(to3DX(item.x), 0, to3DZ(item.y));
+                item.sprite.position.y = 2.4 + Math.sin(elapsed * 3.5 + item.phase) * 0.35;
+                item.tapakAura.scale.setScalar(1 + Math.sin(elapsed * 4 + item.phase) * 0.14);
+
+                const jarak = Math.hypot(player.x - item.x, player.y - item.y);
+                if (jarak < player.radius + 18) {
+                    item.collected = true;
+                    worldGroup.remove(item.group);
+                    senaraiNyawaTerapung.splice(i, 1);
+
+                    if (nyawa < 3) {
+                        nyawa++;
+                        kemaskiniHUD();
+                        mainBunyi('nyawa');
+                        tunjukToastSuasana("❤️ +1 Nyawa Tambahan berjaya dikutip!");
+                    }
+                }
+            }
+        }
+
+        function kemaskiniSuasanaDanAtmosfera(dt, elapsed) {
+            pemasaSuasana -= dt;
+            if (pemasaSuasana <= 0) {
+                pemasaSuasana = TEMPOH_SUASANA;
+                modSuasana = modSuasana === 'siang' ? 'senja' : 'siang';
+                mainBunyi('suasana');
+                tunjukToastSuasana(
+                    modSuasana === 'senja'
+                        ? "🌇 Suasana bertukar ke Waktu Senja! Lampu sekolah mula menyala."
+                        : "☀️ Suasana bertukar ke Waktu Siang yang cerah!"
+                );
             }
 
-            for (let k of koiMeshes) {
-                k.angle += k.speed;
-                const nx = k.cx + Math.cos(k.angle) * k.rx;
-                const nz = k.cz + Math.sin(k.angle) * k.rz;
-                k.mesh.rotation.y = Math.atan2(nx - k.mesh.position.x, nz - k.mesh.position.z);
-                k.mesh.position.set(nx, 0.38, nz);
+            const sasaranSenja = modSuasana === 'senja' ? 1 : 0;
+            faktorSenja += (sasaranSenja - faktorSenja) * Math.min(1, dt * 1.2);
+
+            if (scene && hemiLight && sunLight) {
+                const langitSiang = new THREE.Color(0x7dd3fc);
+                const langitSenja = new THREE.Color(0x1e1b4b);
+                const warnaSemasa = langitSiang.clone().lerp(langitSenja, faktorSenja);
+                scene.background.copy(warnaSemasa);
+                if (scene.fog) scene.fog.color.copy(warnaSemasa);
+
+                hemiLight.intensity = 0.52 - faktorSenja * 0.24;
+                sunLight.intensity = 0.92 - faktorSenja * 0.45;
+                sunLight.color.setHex(faktorSenja > 0.5 ? 0xfb923c : 0xfffbeb);
+
+                if (buildingWindowsMat) {
+                    buildingWindowsMat.emissiveIntensity = faktorSenja * 0.95;
+                }
+                for (const bulb of streetLampBulbs) {
+                    bulb.emissiveIntensity = faktorSenja * 1.6;
+                }
+                for (const pl of streetPointLights) {
+                    pl.intensity = faktorSenja * 1.3;
+                }
             }
-            for (let b of windmillBlades) b.rotation.z += dt * 1.8;
-            for (let f of flagMeshes) f.mesh.rotation.y = Math.sin(nowMs * 0.005 + f.phase) * 0.25;
-            for (let d of fountainDrops) {
-                d.phase = (d.phase + dt * 2.2) % 1;
-                const r = d.phase * 2.6;
-                const y = 1.7 + Math.sin(d.phase * Math.PI) * 1.4 - d.phase * 1.3;
-                d.mesh.position.set(d.cx + Math.cos(d.angle) * r, y, d.cz + Math.sin(d.angle) * r);
+
+            // Animasi ikan koi, kincir angin, bendera, air pancut & zarah
+            for (const k of koiMeshes) {
+                k.angle += k.speed * (dt * 60);
+                const kx = k.cx + Math.cos(k.angle) * k.rx;
+                const kz = k.cz + Math.sin(k.angle) * k.rz;
+                k.mesh.position.set(kx, 0.46, kz);
+                k.mesh.rotation.y = -k.angle + (k.speed > 0 ? 0 : Math.PI);
+            }
+
+            for (const kipas of windmillBlades) {
+                kipas.rotation.z += dt * 1.4;
+            }
+
+            for (const fl of flagMeshes) {
+                fl.mesh.rotation.y = Math.sin(elapsed * 4.2 + fl.phase) * 0.16;
+            }
+
+            for (const fd of fountainDrops) {
+                const t = (elapsed * 1.8 + fd.phase) % 1;
+                const r = t * 2.2;
+                fd.mesh.position.set(
+                    fd.cx + Math.cos(fd.angle) * r,
+                    1.6 + Math.sin(t * Math.PI) * 1.5,
+                    fd.cz + Math.sin(fd.angle) * r
+                );
+            }
+
+            if (petalPoints) {
+                const posArr = petalPoints.geometry.attributes.position.array;
+                for (let i = 0; i < petalData.length; i++) {
+                    const p = petalData[i];
+                    posArr[i * 3] = p.baseX + Math.sin(elapsed + p.phase) * 1.4;
+                    posArr[i * 3 + 1] -= dt * 0.55;
+                    if (posArr[i * 3 + 1] < 0.3) posArr[i * 3 + 1] = 4.6;
+                    posArr[i * 3 + 2] = p.baseZ + Math.cos(elapsed + p.phase) * 1.4;
+                }
+                petalPoints.geometry.attributes.position.needsUpdate = true;
+            }
+
+            if (fireflyPoints) {
+                fireflyPoints.material.opacity = faktorSenja * 0.9;
+                if (faktorSenja > 0.05) {
+                    const ffArr = fireflyPoints.geometry.attributes.position.array;
+                    for (let i = 0; i < fireflyData.length; i++) {
+                        const f = fireflyData[i];
+                        ffArr[i * 3] = f.baseX + Math.sin(elapsed * 1.6 + f.phase) * 1.8;
+                        ffArr[i * 3 + 1] = f.baseY + Math.cos(elapsed * 2.1 + f.phase) * 0.6;
+                        ffArr[i * 3 + 2] = f.baseZ + Math.cos(elapsed * 1.5 + f.phase) * 1.8;
+                    }
+                    fireflyPoints.geometry.attributes.position.needsUpdate = true;
+                }
+            }
+
+            // Kemaskini debu langkah, permata & konfeti
+            for (const d of dustPool) {
+                if (d.life > 0) {
+                    d.life -= dt;
+                    d.mesh.position.y += dt * 0.4;
+                    d.mesh.scale.setScalar(Math.max(0.01, d.life * 2));
+                    if (d.life <= 0) d.mesh.visible = false;
+                }
             }
 
             for (let i = permataList3D.length - 1; i >= 0; i--) {
                 const p = permataList3D[i];
                 p.life -= dt;
-                p.vy -= 0.008;
-                p.mesh.position.x += p.vx;
-                p.mesh.position.y += p.vy;
-                p.mesh.position.z += p.vz;
-                p.mesh.rotation.y += 0.12;
-                if (p.life <= 0) {
+                p.vy -= dt * 0.35;
+                p.mesh.position.x += p.vx * (dt * 60);
+                p.mesh.position.y += p.vy * (dt * 60);
+                p.mesh.position.z += p.vz * (dt * 60);
+                p.mesh.rotation.y += dt * 5;
+                if (p.life <= 0 || p.mesh.position.y < 0.2) {
                     worldGroup.remove(p.mesh);
                     permataList3D.splice(i, 1);
                 }
             }
+
             for (let i = confettiList3D.length - 1; i >= 0; i--) {
                 const c = confettiList3D[i];
                 c.life -= dt;
-                c.vy -= 0.006;
-                c.mesh.position.x += c.vx;
-                c.mesh.position.y += c.vy;
-                c.mesh.position.z += c.vz;
-                c.mesh.rotation.x += c.rx;
-                c.mesh.rotation.y += c.ry;
-                if (c.life <= 0) {
+                c.vy -= dt * 0.28;
+                c.mesh.position.x += c.vx * (dt * 60);
+                c.mesh.position.y += c.vy * (dt * 60);
+                c.mesh.position.z += c.vz * (dt * 60);
+                c.mesh.rotation.x += dt * 6;
+                c.mesh.rotation.z += dt * 5;
+                if (c.life <= 0 || c.mesh.position.y < 0.1) {
                     worldGroup.remove(c.mesh);
                     confettiList3D.splice(i, 1);
                 }
             }
 
-            for (let d of dustPool) {
-                if (d.life > 0) {
-                    d.life -= dt;
-                    d.mesh.position.y += dt * 0.9;
-                    d.mesh.scale.addScalar(dt * 1.2);
-                    if (d.life <= 0) d.mesh.visible = false;
-                }
+            // Denyutan aura peti harta karun
+            if (treasureChest3D && treasureChest3D.visible) {
+                treasureChest3D.rotation.y = Math.sin(elapsed * 1.5) * 0.15;
             }
+        }
 
-            if (petalPoints) {
-                const pos = petalPoints.geometry.attributes.position.array;
-                for (let i = 0; i < petalData.length; i++) {
-                    const pd = petalData[i];
-                    pd.phase += dt * 1.4;
-                    pos[i * 3] = pd.baseX + Math.sin(pd.phase) * 0.9;
-                    pos[i * 3 + 1] -= dt * 0.55;
-                    if (pos[i * 3 + 1] < 0.3) pos[i * 3 + 1] = 4.8;
-                }
-                petalPoints.geometry.attributes.position.needsUpdate = true;
-            }
-            if (fireflyPoints) {
-                fireflyPoints.material.opacity = Math.max(0, (faktorSenja - 0.3) * 1.3);
-                const pos = fireflyPoints.geometry.attributes.position.array;
-                for (let i = 0; i < fireflyData.length; i++) {
-                    const fd = fireflyData[i];
-                    fd.phase += dt * 2.1;
-                    pos[i * 3] = fd.baseX + Math.cos(fd.phase) * 0.8;
-                    pos[i * 3 + 1] = fd.baseY + Math.sin(fd.phase * 1.5) * 0.45;
-                }
-                fireflyPoints.geometry.attributes.position.needsUpdate = true;
-            }
-
+        function kemaskiniKameraDanBumbung(dt) {
+            if (!camera3D || !playerGroup3D) return;
             const px3 = to3DX(player.x);
             const pz3 = to3DZ(player.y);
-            let shakeX = 0;
-            let shakeZ = 0;
-            if (screenShake > 0) {
-                shakeX = (Math.random() - 0.5) * 0.55;
-                shakeZ = (Math.random() - 0.5) * 0.55;
-                screenShake -= dt * 60;
+
+            if (sunLight) {
+                sunLight.position.set(px3 + 45, 68, pz3 + 38);
+                sunLight.target.position.set(px3, 0, pz3);
+                sunLight.target.updateMatrixWorld();
             }
+
+            let camTargetX, camTargetY, camTargetZ, lookX, lookY, lookZ;
 
             if (cameraMode === 'chase') {
-                const camDist = 11.5 * cameraZoom;
-                const tinggiKamera = (6.4 + cameraPitch * 4.5) * cameraZoom;
-                const targetCamX = px3 + Math.sin(cameraYaw) * camDist + shakeX;
-                const targetCamZ = pz3 + Math.cos(cameraYaw) * camDist + shakeZ;
-                camera3D.position.lerp(new THREE.Vector3(targetCamX, tinggiKamera, targetCamZ), Math.min(1, dt * 12));
-                const titikFokusX = px3 - Math.sin(cameraYaw) * 2.2;
-                const titikFokusZ = pz3 - Math.cos(cameraYaw) * 2.2;
-                camera3D.lookAt(titikFokusX, 2.35, titikFokusZ);
+                const dist = 13.5 * cameraZoom;
+                const height = (6.8 + cameraPitch * 10) * cameraZoom;
+                camTargetX = px3 + Math.sin(cameraYaw) * dist;
+                camTargetY = Math.max(3.2, height);
+                camTargetZ = pz3 + Math.cos(cameraYaw) * dist;
+                lookX = px3 - Math.sin(cameraYaw) * 3.5;
+                lookY = 2.1;
+                lookZ = pz3 - Math.cos(cameraYaw) * 3.5;
             } else {
-                const tinggiTop = 30 * cameraZoom;
-                const jarakZTop = 21 * cameraZoom;
-                camera3D.position.lerp(new THREE.Vector3(px3 + shakeX, tinggiTop, pz3 + jarakZTop + shakeZ), Math.min(1, dt * 8));
-                camera3D.lookAt(px3, 1.2, pz3);
+                const height = 34 * cameraZoom;
+                const dist = 24 * cameraZoom;
+                camTargetX = px3 + Math.sin(cameraYaw) * dist;
+                camTargetY = height;
+                camTargetZ = pz3 + Math.cos(cameraYaw) * dist;
+                lookX = px3;
+                lookY = 1.2;
+                lookZ = pz3;
             }
 
-            renderer.render(scene, camera3D);
+            if (screenShake > 0) {
+                screenShake = Math.max(0, screenShake - dt);
+                camTargetX += (Math.random() - 0.5) * screenShake * 2.2;
+                camTargetZ += (Math.random() - 0.5) * screenShake * 2.2;
+            }
+
+            camera3D.position.lerp(new THREE.Vector3(camTargetX, camTargetY, camTargetZ), Math.min(1, dt * 10));
+            camera3D.lookAt(lookX, lookY, lookZ);
+
+            // Lutsinarkan bumbung & dinding bangunan apabila pemain masuk ke dalam kawasan bangunan
+            for (const occ of buildingRoofOccluders) {
+                const pemainDalam = (
+                    px3 >= occ.minX && px3 <= occ.maxX &&
+                    pz3 >= occ.minZ && pz3 <= occ.maxZ
+                );
+                const targetOp = pemainDalam ? 0.14 : 1.0;
+                occ.opacity += (targetOp - occ.opacity) * Math.min(1, dt * 8);
+
+                for (const m of occ.meshes) {
+                    if (m && m.material) {
+                        m.material.opacity = occ.opacity;
+                    }
+                }
+                if (occ.windowMesh && occ.windowMesh.material) {
+                    occ.windowMesh.visible = occ.opacity > 0.35;
+                }
+            }
         }
 
         // =========================================================================
-        // 12. LUKISAN MINI-MAP 2D LUTSINAR
+        // 13. MINI-MAP 2D & GELUNG ANIMASI UTAMA (60 FPS)
         // =========================================================================
         function lukisMinimap() {
-            if (!gameStarted || minimapCanvas.classList.contains('hidden')) return;
+            if (!minimapCanvas || minimapCanvas.classList.contains('hidden')) return;
 
-            const isMobile = window.innerWidth <= 600;
-            const mmW = isMobile ? 112 : 148;
+            const isSmall = window.innerWidth < 480;
+            const mmW = isSmall ? 114 : 142;
             const mmH = Math.round(mmW * (MAP_HEIGHT / MAP_WIDTH));
             if (minimapCanvas.width !== mmW || minimapCanvas.height !== mmH) {
                 minimapCanvas.width = mmW;
@@ -6399,82 +6571,120 @@
             const sy = mmH / MAP_HEIGHT;
 
             mmCtx.clearRect(0, 0, mmW, mmH);
-            mmCtx.fillStyle = 'rgba(15, 23, 42, 0.72)';
+            mmCtx.fillStyle = '#1e293b';
             mmCtx.fillRect(0, 0, mmW, mmH);
 
-            for (let d of senaraiDinding) {
-                if (d.jenis === 'pagar') mmCtx.fillStyle = 'rgba(100, 116, 139, 0.7)';
-                else if (d.jenis === 'padang') mmCtx.fillStyle = 'rgba(34, 197, 94, 0.65)';
-                else if (d.jenis === 'taman_lestari' || d.jenis === 'taman_sains') mmCtx.fillStyle = 'rgba(16, 185, 129, 0.55)';
-                else mmCtx.fillStyle = 'rgba(148, 163, 184, 0.52)';
-                mmCtx.fillRect(d.x * sx, d.y * sy, Math.max(1.5, d.w * sx), Math.max(1.5, d.h * sy));
+            // Lukis bangunan, taman dan pintu masuk
+            for (const b of senaraiBangunanPeta) {
+                if (b.jenis === 'pagar') {
+                    mmCtx.fillStyle = '#15803d';
+                } else if (b.jenis === 'taman_lestari' || b.jenis === 'taman_sains' || b.jenis === 'padang') {
+                    mmCtx.fillStyle = '#16a34a';
+                } else if (b.jenis === 'pergola') {
+                    mmCtx.fillStyle = '#14532d';
+                } else {
+                    mmCtx.fillStyle = '#64748b';
+                }
+                mmCtx.fillRect(b.x * sx, b.y * sy, Math.max(1.5, b.w * sx), Math.max(1.5, b.h * sy));
+
+                // Tandakan pintu masuk bangunan dengan titik kuning kecil
+                if (b.pintu) {
+                    mmCtx.fillStyle = '#facc15';
+                    mmCtx.fillRect(b.pintu.x * sx - 2, b.pintu.y * sy - 2, 4, 4);
+                }
             }
 
-            for (let z of senaraiZombie) {
-                mmCtx.fillStyle = '#ef4444';
+            // Lukis emoji nyawa terapung jika aktif
+            for (const ny of senaraiNyawaTerapung) {
+                if (!ny.collected) {
+                    mmCtx.fillStyle = '#f43f5e';
+                    mmCtx.beginPath();
+                    mmCtx.arc(ny.x * sx, ny.y * sy, 2.5, 0, Math.PI * 2);
+                    mmCtx.fill();
+                }
+            }
+
+            // Lukis zombie
+            mmCtx.fillStyle = '#84cc16';
+            for (const z of senaraiZombie) {
                 mmCtx.beginPath();
-                mmCtx.arc(z.x * sx, z.y * sy, 2.5, 0, Math.PI * 2);
+                mmCtx.arc(z.x * sx, z.y * sy, 2.2, 0, Math.PI * 2);
                 mmCtx.fill();
             }
 
-            for (let item of senaraiNyawaTerapung) {
-                if (item.collected) continue;
-                mmCtx.fillStyle = '#f43f5e';
-                mmCtx.beginPath();
-                mmCtx.arc(item.x * sx, item.y * sy, 3.8, 0, Math.PI * 2);
-                mmCtx.fill();
-                mmCtx.strokeStyle = '#ffffff';
-                mmCtx.lineWidth = 1;
-                mmCtx.stroke();
-            }
-
+            // Lukis peti harta karun aktif dengan denyutan emas
             if (indexHarta < senaraiHarta.length) {
                 const h = senaraiHarta[indexHarta];
+                const pulse = 3.2 + Math.sin(performance.now() * 0.008) * 1.2;
+                mmCtx.fillStyle = 'rgba(250, 204, 21, 0.38)';
+                mmCtx.beginPath();
+                mmCtx.arc(h.x * sx, h.y * sy, pulse + 2, 0, Math.PI * 2);
+                mmCtx.fill();
+
                 mmCtx.fillStyle = '#facc15';
                 mmCtx.beginPath();
-                mmCtx.arc(h.x * sx, h.y * sy, 4.2, 0, Math.PI * 2);
+                mmCtx.arc(h.x * sx, h.y * sy, 3, 0, Math.PI * 2);
                 mmCtx.fill();
-                mmCtx.strokeStyle = '#ffffff';
-                mmCtx.lineWidth = 1.2;
-                mmCtx.stroke();
             }
 
+            // Lukis pemain
             mmCtx.fillStyle = '#38bdf8';
             mmCtx.beginPath();
-            mmCtx.arc(player.x * sx, player.y * sy, 3.6, 0, Math.PI * 2);
+            mmCtx.arc(player.x * sx, player.y * sy, 3.2, 0, Math.PI * 2);
             mmCtx.fill();
             mmCtx.strokeStyle = '#ffffff';
             mmCtx.lineWidth = 1.2;
             mmCtx.stroke();
         }
 
-        // =========================================================================
-        // 13. GELUNG UTAMA PERMAINAN & RESPONSIF SAIZ SKRIN
-        // =========================================================================
+        function animateLoop(now) {
+            requestAnimationFrame(animateLoop);
+
+            const dt = Math.min(0.05, Math.max(0.001, (now - lastFrameTime) / 1000));
+            lastFrameTime = now;
+            const elapsed = now / 1000;
+
+            if (gameStarted && !isPaused) {
+                if (!isQuizActive && !isMessageActive && !isAnimasiPeti) {
+                    masaBermain += dt;
+                    const secInt = Math.floor(masaBermain);
+                    if (secInt !== lastTimerSec) {
+                        lastTimerSec = secInt;
+                        const elTimer = document.getElementById('hud-timer');
+                        if (elTimer) elTimer.textContent = `⏱️ ${formatMasaSaat(secInt)}`;
+                    }
+                }
+
+                kemaskiniPemain(dt);
+                kemaskiniZombie(dt);
+                kemaskiniNyawaTerapung(dt, elapsed);
+                kemaskiniSuasanaDanAtmosfera(dt, elapsed);
+                kemaskiniKameraDanBumbung(dt);
+                lukisMinimap();
+            }
+
+            if (renderer && scene && camera3D) {
+                renderer.render(scene, camera3D);
+            }
+        }
+
         window.addEventListener('resize', () => {
             if (!renderer || !camera3D) return;
             const container = document.getElementById('webgl-container');
             const w = Math.max(1, container.clientWidth);
             const h = Math.max(1, container.clientHeight);
-            const aspect = w / h;
-            camera3D.aspect = aspect;
-            camera3D.fov = kiraFovResponsif(aspect);
+            camera3D.aspect = w / h;
+            camera3D.fov = kiraFovResponsif(w / h);
             camera3D.updateProjectionMatrix();
             renderer.setSize(w, h);
         });
 
-        function gameLoop(nowMs) {
-            const dt = Math.min(0.05, (nowMs - lastFrameTime) / 1000);
-            lastFrameTime = nowMs;
-
-            kemaskiniPermainan(dt);
-            kemaskiniVisual3D(dt, nowMs);
-            lukisMinimap();
-
-            requestAnimationFrame(gameLoop);
-        }
-
-        requestAnimationFrame(gameLoop);
+        window.onload = function () {
+            inisialisasiThreeJS();
+            janaPetaSekolah3D();
+            lastFrameTime = performance.now();
+            requestAnimationFrame(animateLoop);
+        };
     </script>
 </body>
 </html>
